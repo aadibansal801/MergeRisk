@@ -1,0 +1,13 @@
+{
+  "expect_flag": true,
+  "description": "Both branches independently add a function named validate_input with different logic. Git sees no overlapping lines (added in different regions) and merges cleanly, but Python silently lets the second definition override the first at runtime -- a classic false negative for unstructured merge.",
+  "expected_interactions": [
+    {
+      "kind": "duplicate_addition",
+      "entities": [
+        "validate_input",
+        "validate_input"
+      ]
+    }
+  ]
+}

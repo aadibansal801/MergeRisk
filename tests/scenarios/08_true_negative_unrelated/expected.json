@@ -1,0 +1,5 @@
+{
+  "expect_flag": false,
+  "description": "Left and Right each add a brand-new, fully independent function -- no shared calls, no shared state, no shared name. Should stay SAFE.",
+  "expected_interactions": []
+}

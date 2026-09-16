@@ -1,0 +1,13 @@
+{
+  "expect_flag": true,
+  "description": "Left removes legacy_formatter entirely as part of a refactor (and updates render_report to not need it). Right, unaware of the deletion, independently adds generate_summary which calls legacy_formatter. Merged code calls a function that no longer exists -- a NameError at runtime.",
+  "expected_interactions": [
+    {
+      "kind": "deleted_dependency",
+      "entities": [
+        "legacy_formatter",
+        "generate_summary"
+      ]
+    }
+  ]
+}

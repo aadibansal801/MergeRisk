@@ -1,0 +1,5 @@
+{
+  "expect_flag": false,
+  "description": "IMPORTANT REGRESSION TEST: Left changes process_order, Right adds cancel_order. Both call a common, unchanged helper (log). Neither calls the other, and log itself wasn't changed/added. If the entity extractor's visit_Call bug (callee names leaking into reads) is NOT fixed, this will incorrectly fire a shared_state interaction on 'log'.",
+  "expected_interactions": []
+}

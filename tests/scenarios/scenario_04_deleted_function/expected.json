@@ -1,0 +1,7 @@
+{
+  "expect_flag": true,
+  "description": "Left deletes validate_coupon (coupons deprecated), but Right's unchanged process_order still calls it. Git merges cleanly, but the merged code will NameError at runtime.",
+  "expected_interactions": [
+    {"kind": "deleted_dependency", "entities": ["validate_coupon", "process_order"]}
+  ]
+}

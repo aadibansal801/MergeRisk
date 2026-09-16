@@ -1,0 +1,13 @@
+{
+  "expect_flag": true,
+  "description": "Same idea as scenario 01 but inside a class, calling via self. -- exercises the self.method -> ClassName.method call-expansion logic.",
+  "expected_interactions": [
+    {
+      "kind": "signature_mismatch",
+      "entities": [
+        "InvoiceService.compute_total",
+        "InvoiceService.summarize"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "expect_flag": true,
+  "description": "Left changes restock's write to inventory_count; Right changes sell's write to the same global. Both write the same shared state independently.",
+  "expected_interactions": [
+    {
+      "kind": "shared_state",
+      "entities": [
+        "restock",
+        "sell"
+      ]
+    }
+  ]
+}

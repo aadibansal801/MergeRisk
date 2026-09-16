@@ -1,0 +1,13 @@
+{
+  "expect_flag": true,
+  "description": "Left adds a required tax_rate param to calculate_total; Right independently reformats print_invoice, which still calls calculate_total with the old 2-arg signature. Real runtime TypeError after merge.",
+  "expected_interactions": [
+    {
+      "kind": "signature_mismatch",
+      "entities": [
+        "calculate_total",
+        "print_invoice"
+      ]
+    }
+  ]
+}

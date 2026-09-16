@@ -1,0 +1,13 @@
+{
+  "expect_flag": true,
+  "description": "Left changes get_discount's behavior (0.1 -> 0.15). Right independently adds apply_discount, which calls get_discount assuming the old rate. No textual conflict, but Right's new logic silently behaves differently than intended.",
+  "expected_interactions": [
+    {
+      "kind": "call_dependency",
+      "entities": [
+        "get_discount",
+        "apply_discount"
+      ]
+    }
+  ]
+}

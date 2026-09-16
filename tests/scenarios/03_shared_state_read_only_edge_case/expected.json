@@ -1,0 +1,5 @@
+{
+  "expect_flag": false,
+  "description": "EDGE CASE: both functions only READ the shared constant MAX_ITEMS, neither writes it. We judge this safe (no real interference risk), which exercises whether shared_state correctly requires at least one write, not just any overlap in reads. If your tool flags this as-is, it confirms the read/write tightening fix has NOT been applied yet.",
+  "expected_interactions": []
+}

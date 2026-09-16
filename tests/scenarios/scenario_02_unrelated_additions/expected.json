@@ -1,0 +1,5 @@
+{
+  "expect_flag": false,
+  "description": "Left adds log_event(), Right adds format_currency(). Completely independent functions with no shared calls, state, or naming collisions. Should be SAFE.",
+  "expected_interactions": []
+}

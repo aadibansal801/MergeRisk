@@ -1,0 +1,8 @@
+{
+  "expect_flag": true,
+  "description": "Left changes calculate_tax signature (adds region param), Right changes apply_discount which calls calculate_tax assuming old signature. Classic signature_mismatch + call_dependency.",
+  "expected_interactions": [
+    {"kind": "signature_mismatch", "entities": ["calculate_tax", "apply_discount"]},
+    {"kind": "call_dependency", "entities": ["calculate_tax", "apply_discount"]}
+  ]
+}

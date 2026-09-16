@@ -1,0 +1,5 @@
+{
+  "expect_flag": false,
+  "description": "Both branches independently delete the same dead function. No surviving code calls it, so there is no dangling reference -- this should stay SAFE, distinguishing it from scenario 06 where a caller survives.",
+  "expected_interactions": []
+}

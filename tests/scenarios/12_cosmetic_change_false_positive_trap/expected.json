@@ -1,0 +1,5 @@
+{
+  "expect_flag": false,
+  "description": "Left makes a purely cosmetic change (introduces a local variable, no behavior change) to calculate_area. Right adds a completely unrelated new function. Tests that a trivial structural change on one side doesn't spuriously interact with an unrelated addition on the other.",
+  "expected_interactions": []
+}

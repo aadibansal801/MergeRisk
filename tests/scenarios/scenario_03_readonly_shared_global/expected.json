@@ -1,0 +1,7 @@
+{
+  "expect_flag": true,
+  "description": "Left changes compute_tax (reads TAX_RATE), Right changes format_receipt (now also reads TAX_RATE). Both only READ the global — neither writes it. We mark expect_flag=true because shared-state on a read-only global is still a meaningful signal: if someone later changes TAX_RATE's value, both functions are affected, and the fact that two independently-modified functions depend on the same global config is worth flagging for review. The tool's shared_state check correctly fires here since reads are included in the state set.",
+  "expected_interactions": [
+    {"kind": "shared_state", "entities": ["compute_tax", "format_receipt"]}
+  ]
+}
