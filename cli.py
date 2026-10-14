@@ -7,11 +7,17 @@ import ast
 import sys
 from pathlib import Path
 
+# Support running the repository CLI directly before the package is installed.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
+from mergerisk.domain.findings import CanonicalFinding
+from mergerisk.domain.results import AnalysisResult, AnalysisStatus, CoverageSummary
+from mergerisk.domain.revisions import RevisionContext
+from mergerisk.reporting.summary import ReportFormatter
+from mergerisk.rules.v1_rules import V1RuleContext, V1_RULES
 from detector.change_extractor import extract_changes
-from detector.entity_extractor import extract_entities
+from detector.entity_extractor import EntityInfo, extract_entities
 from detector.interaction_analyzer import analyze_interactions
-from detector.risk_classifier import classify
-from detector.report import render
 
 
 class AnalysisError(Exception):
@@ -33,8 +39,13 @@ def _read_and_parse(path: str, label: str) -> ast.Module:
         ) from exc
 
 
-def analyze_files(base_path: str, left_path: str, right_path: str, merged_path: str):
-    """Run the full detection pipeline; return (classified, entities, merged_tree)."""
+def analyze_files(
+    base_path: str,
+    left_path: str,
+    right_path: str,
+    merged_path: str,
+) -> tuple[list[CanonicalFinding], dict[str, EntityInfo], ast.Module]:
+    """Run the baseline pipeline and return canonical findings plus AST context."""
     base_tree = _read_and_parse(base_path, "base")
     _read_and_parse(left_path, "left")
     _read_and_parse(right_path, "right")
@@ -43,8 +54,10 @@ def analyze_files(base_path: str, left_path: str, right_path: str, merged_path: 
     changeset = extract_changes(base_path, left_path, right_path)
     entities = extract_entities(merged_tree)
     interactions = analyze_interactions(changeset, entities, base_tree)
-    classified = classify(interactions)
-    return classified, entities, merged_tree
+    revision_context = RevisionContext("unknown", "unknown", "unknown")
+    rule_context = V1RuleContext(interactions, entities, merged_path, revision_context)
+    findings = [finding for rule in V1_RULES for finding in rule.evaluate(rule_context)]
+    return findings, entities, merged_tree
 
 
 def _parse_args() -> argparse.Namespace:
@@ -69,14 +82,28 @@ def main() -> None:
     """Wire all detector modules together and print the final report."""
     args = _parse_args()
     try:
-        classified, entities, _ = analyze_files(
+        findings, _entities, _ = analyze_files(
             args.base, args.left, args.right, args.merged,
         )
     except AnalysisError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
+        failure = AnalysisResult(
+            AnalysisStatus.FAILED,
+            [],
+            CoverageSummary(0, 0, 0, 0, 0),
+            {},
+            [str(exc)],
+        )
+        print(ReportFormatter().format_terminal(failure), file=sys.stderr)
         sys.exit(1)
 
-    report = render(classified, entities, args.merged)
+    result = AnalysisResult(
+        AnalysisStatus.SUCCESS,
+        findings,
+        CoverageSummary(1, 0, 0, 0, 0),
+        {"input_mode": "four_file_v1"},
+        [],
+    )
+    report = ReportFormatter().format_terminal(result)
     print(report)
 
 

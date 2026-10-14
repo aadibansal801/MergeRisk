@@ -86,12 +86,14 @@ def render(
     lines.append(f"  Git Merge Status: CLEAN (as reported by Git)")
     lines.append(_THICK_SEP)
 
+    lines.append("  Analysis status: SUCCESS")
+
     if not interactions_with_risk:
         lines.append("")
-        lines.append("SAFE — no semantic interactions detected.")
-        lines.append("")
-        lines.append("  Both branches' changes appear independent.")
-        lines.append("  No further review is needed for this file.")
+        lines.append(
+            "Verdict: ADVISORY - No supported risk patterns detected. "
+            "Notice: Static analysis cannot prove absence of behavioral conflicts."
+        )
         lines.append("")
         lines.append(_THICK_SEP)
         return "\n".join(lines)

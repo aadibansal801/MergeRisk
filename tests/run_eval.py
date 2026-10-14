@@ -1,125 +1,104 @@
-"""Evaluation harness — run all scenarios and report TP/FP/TN/FN metrics."""
+"""Finding-level evaluation harness for the v1 scenario corpus."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
+from typing import Any
 
-# Allow running from repo root: `python tests/run_eval.py`
+# Allow running from repo root: `python tests/run_eval.py`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from cli import analyze_files, AnalysisError  # noqa: E402
+from cli import AnalysisError, analyze_files  # noqa: E402
+from mergerisk.eval import EvaluationReport, Evaluator, ExpectedFinding, ScenarioEvaluation  # noqa: E402
+
+_KIND_TO_RULE_ID: dict[str, str] = {
+    "signature_mismatch": "MR-PY-SIG-001",
+    "deleted_dependency": "MR-PY-DEP-001",
+    "duplicate_addition": "MR-PY-DUP-001",
+    "call_dependency": "MR-PY-XCALL-001",
+    "shared_state": "MR-PY-STATE-001",
+    "same_entity_changed": "MR-PY-MOD-001",
+}
 
 
-def _load_expected(scenario_dir: Path) -> dict:
-    """Load and return the expected.json for a scenario."""
-    with open(scenario_dir / "expected.json", encoding="utf-8") as f:
-        return json.load(f)
+def _load_expected(scenario_dir: Path) -> dict[str, Any]:
+    """Load a scenario's expected-finding declaration."""
+    with (scenario_dir / "expected.json").open(encoding="utf-8") as expected_file:
+        return json.load(expected_file)
 
 
-def _match_interaction(expected: dict, classified: list) -> bool:
-    """Check if an expected {kind, entities} appears in classified results."""
-    exp_kind = expected["kind"]
-    exp_set = frozenset(expected["entities"])
-    for inter, _risk in classified:
-        if inter.kind == exp_kind and frozenset((inter.left_entity, inter.right_entity)) == exp_set:
-            return True
-    return False
-
-
-def _run_scenario(scenario_dir: Path) -> tuple[str, str, int, list[str]]:
-    """Run one scenario; return (name, label, actual_count, diagnostics)."""
-    name = scenario_dir.name
+def _run_scenario(scenario_dir: Path) -> ScenarioEvaluation:
+    """Run the detector and evaluate exact rule/entity expectations."""
     spec = _load_expected(scenario_dir)
-    expect_flag = spec["expect_flag"]
-
-    paths = {k: str(scenario_dir / f"{k}.py") for k in ("base", "left", "right", "merged")}
+    expected = [
+        ExpectedFinding(_KIND_TO_RULE_ID[item["kind"]], set(item["entities"]))
+        for item in spec.get("expected_interactions", [])
+    ]
+    paths = {key: str(scenario_dir / f"{key}.py") for key in ("base", "left", "right", "merged")}
     try:
-        classified, _entities, _tree = analyze_files(
+        findings, _entities, _tree = analyze_files(
             paths["base"], paths["left"], paths["right"], paths["merged"],
         )
-    except AnalysisError as exc:
-        return name, "ERR", 0, [f"AnalysisError: {exc}"]
-
-    actual_flag = len(classified) > 0
-    if expect_flag and actual_flag:
-        label = "TP"
-    elif expect_flag and not actual_flag:
-        label = "FN"
-    elif not expect_flag and actual_flag:
-        label = "FP"
-    else:
-        label = "TN"
-
-    # Diagnostic: check expected_interactions (informational only)
-    diagnostics: list[str] = []
-    for exp in spec.get("expected_interactions", []):
-        if not _match_interaction(exp, classified):
-            diagnostics.append(f"expected interaction not found: {exp}")
-    if spec.get("expected_interactions") is not None:
-        actual_kinds = [(i.kind, frozenset((i.left_entity, i.right_entity))) for i, _ in classified]
-        expected_kinds = [(e["kind"], frozenset(e["entities"])) for e in spec["expected_interactions"]]
-        for kind, eset in actual_kinds:
-            if (kind, eset) not in expected_kinds:
-                diagnostics.append(f"unexpected extra interaction: kind={kind}, entities={set(eset)}")
-
-    return name, label, len(classified), diagnostics
+    except AnalysisError as error:
+        return Evaluator().evaluate_scenario(scenario_dir.name, expected, [], error=str(error))
+    return Evaluator().evaluate_scenario(scenario_dir.name, expected, findings)
 
 
-def _safe_div(num: float, den: float) -> str:
-    """Divide or return 'N/A' on zero denominator."""
-    return f"{num / den:.2f}" if den else "N/A"
+def _print_scenario(evaluation: ScenarioEvaluation) -> None:
+    """Print finding-level counts without a scenario-level any-warning verdict."""
+    label = (
+        "ERROR" if evaluation.execution_error is not None
+        else "TN" if evaluation.true_negative
+        else "MATCHED" if evaluation.true_positives and not evaluation.false_positives and not evaluation.false_negatives
+        else "MISMATCH"
+    )
+    print(
+        f"  [{label}] {evaluation.scenario_id} — "
+        f"{len(evaluation.true_positives)} TP, {len(evaluation.false_positives)} FP, "
+        f"{len(evaluation.false_negatives)} FN"
+    )
+    if evaluation.execution_error is not None:
+        print(f"        Analysis error: {evaluation.execution_error}")
+
+
+def _print_report(report: EvaluationReport) -> None:
+    """Print aggregate finding-level metrics."""
+    separator = "=" * 64
+    print()
+    print(separator)
+    print("   FINDING-LEVEL EVALUATION SUMMARY")
+    print(separator)
+    print(f"Total scenarios: {report.total_scenarios}")
+    print(f"  TP: {report.tp_count}   FP: {report.fp_count}   TN: {report.tn_count}   FN: {report.fn_count}")
+    print(f"  Errors: {report.error_count}")
+    print()
+    print(f"Precision: {report.precision:.2f}   (TP / (TP+FP))")
+    print(f"Recall:    {report.recall:.2f}   (TP / (TP+FN))")
+    print(f"F1:        {report.f1:.2f}")
+    print(f"False positives per 100 clean scenarios: {report.fp_per_100_clean:.2f}")
+    print(separator)
 
 
 def main() -> None:
-    """Discover and evaluate all scenario directories."""
-    parser = argparse.ArgumentParser(description="Run evaluation harness")
+    """Discover, evaluate, and summarize all scenario directories."""
+    parser = argparse.ArgumentParser(description="Run finding-level scenario evaluation")
     parser.add_argument("--scenarios-dir", default=str(Path(__file__).parent / "scenarios"))
     args = parser.parse_args()
-
     scenarios_root = Path(args.scenarios_dir)
-    dirs = sorted(
-        d for d in scenarios_root.iterdir()
-        if d.is_dir() and (d / "expected.json").exists()
+    directories = sorted(
+        directory for directory in scenarios_root.iterdir()
+        if directory.is_dir() and (directory / "expected.json").exists()
     )
-
-    if not dirs:
+    if not directories:
         print(f"No scenarios found in {scenarios_root}")
         return
-
-    counts = {"TP": 0, "FP": 0, "TN": 0, "FN": 0}
-    for d in dirs:
-        name, label, n, diags = _run_scenario(d)
-        counts[label] = counts.get(label, 0) + 1
-        flag_word = "flag" if label in ("TP", "FN") else "safe"
-        print(f"  [{label}] {name} — {n} interaction(s) found (expected: {flag_word})")
-        for diag in diags:
-            print(f"        ⚠ {diag}")
-
-    tp, fp, tn, fn = counts["TP"], counts["FP"], counts["TN"], counts["FN"]
-    total = tp + fp + tn + fn
-    precision = _safe_div(tp, tp + fp)
-    recall = _safe_div(tp, tp + fn)
-    accuracy = _safe_div(tp + tn, total)
-    f1_num = 2 * tp
-    f1_den = 2 * tp + fp + fn
-    f1 = _safe_div(f1_num, f1_den)
-
-    sep = "=" * 64
-    print()
-    print(sep)
-    print("   EVALUATION SUMMARY")
-    print(sep)
-    print(f"Total scenarios: {total}")
-    print(f"  TP: {tp}   FP: {fp}   TN: {tn}   FN: {fn}")
-    print()
-    print(f"Precision: {precision}   (TP / (TP+FP))")
-    print(f"Recall:    {recall}   (TP / (TP+FN))")
-    print(f"Accuracy:  {accuracy}   ((TP+TN) / total)")
-    print(f"F1:        {f1}")
-    print(sep)
+    evaluator = Evaluator()
+    evaluations = [_run_scenario(directory) for directory in directories]
+    for evaluation in evaluations:
+        _print_scenario(evaluation)
+    _print_report(evaluator.aggregate(evaluations))
 
 
 if __name__ == "__main__":
