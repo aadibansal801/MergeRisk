@@ -67,6 +67,23 @@ class InvolvedEntity:
 
 
 @dataclass(frozen=True)
+class FindingRelationship:
+    """Structured relation asserted by a detector finding."""
+
+    kind: str
+    source: str
+    target: str
+    condition: str
+
+    def __post_init__(self) -> None:
+        for name in ("kind", "source", "target", "condition"):
+            if not isinstance(getattr(self, name), str):
+                raise TypeError(f"relationship {name} must be a string")
+            if not getattr(self, name).strip():
+                raise ValueError(f"relationship {name} must be non-empty")
+
+
+@dataclass(frozen=True)
 class ValidationRecord:
     checks_run: list[str]
     checks_not_run: list[str]
@@ -92,11 +109,16 @@ class CanonicalFinding:
     limitations: tuple[str, ...]
     suggested_action: str
     schema_version: str = "1.0"
+    relationships: tuple[FindingRelationship, ...] = ()
 
     def __post_init__(self) -> None:
         for name in ("finding_id", "rule_id", "title", "category", "summary", "suggested_action", "schema_version"):
             if not getattr(self, name):
                 raise ValueError(f"{name} must be non-empty")
+        if not isinstance(self.relationships, tuple):
+            raise TypeError("relationships must be an immutable tuple")
+        if any(not isinstance(item, FindingRelationship) for item in self.relationships):
+            raise TypeError("relationships must contain FindingRelationship values")
 
     @classmethod
     def generate_id(cls, rule_id: str, symbols: list[str], paths: list[str]) -> str:
@@ -146,6 +168,10 @@ class CanonicalFinding:
                 for location in self.locations
             ],
             "evidence": list(self.evidence),
+            "relationships": [
+                {"kind": item.kind, "source": item.source, "target": item.target, "condition": item.condition}
+                for item in self.relationships
+            ],
             "validation": {
                 "checks_run": list(self.validation.checks_run),
                 "checks_not_run": list(self.validation.checks_not_run),

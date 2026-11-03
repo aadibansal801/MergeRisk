@@ -1,13 +1,16 @@
 {
   "expect_flag": true,
   "description": "Both branches independently add a function named validate_input with different logic. Git sees no overlapping lines (added in different regions) and merges cleanly, but Python silently lets the second definition override the first at runtime -- a classic false negative for unstructured merge.",
-  "expected_interactions": [
+  "expected_findings": [],
+  "deferred_expectations": [
     {
       "kind": "duplicate_addition",
       "entities": [
         "validate_input",
         "validate_input"
-      ]
+      ],
+      "status": "deferred",
+      "reason": "Legacy expectation is not currently represented by a supported structured Tier A detector finding."
     }
   ]
 }

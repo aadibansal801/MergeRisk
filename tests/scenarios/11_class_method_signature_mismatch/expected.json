@@ -1,13 +1,26 @@
 {
   "expect_flag": true,
   "description": "Same idea as scenario 01 but inside a class, calling via self. -- exercises the self.method -> ClassName.method call-expansion logic.",
-  "expected_interactions": [
+  "expected_findings": [
     {
-      "kind": "signature_mismatch",
+      "rule_id": "MR-PY-SIG-002",
       "entities": [
-        "InvoiceService.compute_total",
-        "InvoiceService.summarize"
-      ]
+        {
+          "symbol": "merged.InvoiceService.compute_total",
+          "role": "changed_signature"
+        },
+        {
+          "symbol": "merged.InvoiceService.summarize",
+          "role": "affected_call_site"
+        }
+      ],
+      "relationship": {
+        "kind": "call",
+        "source": "merged.InvoiceService.summarize",
+        "target": "merged.InvoiceService.compute_total",
+        "condition": "call omits required argument(s): tax_rate"
+      }
     }
-  ]
+  ],
+  "deferred_expectations": []
 }

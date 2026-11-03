@@ -1,0 +1,21 @@
+{
+  "description": "Both parents parse, but the candidate has invalid Python syntax.",
+  "expected_findings": [
+    {
+      "rule_id": "MR-PY-SYNTAX-001",
+      "entities": [
+        {
+          "symbol": "merged.py",
+          "role": "syntax_error"
+        }
+      ],
+      "relationship": {
+        "kind": "syntax_error",
+        "source": "merged.py",
+        "target": "merged.py",
+        "condition": "invalid syntax"
+      }
+    }
+  ],
+  "deferred_expectations": []
+}

@@ -1,6 +1,6 @@
 """Deterministic evaluation of canonical findings."""
 
-from .matcher import ExpectedFinding, FindingMatcher
-from .metrics import EvaluationReport, Evaluator, ScenarioEvaluation
+from .matcher import ExpectedEntity, ExpectedFinding, ExpectedRelationship, FindingMatcher
+from .metrics import EvaluationReport, Evaluator, ScenarioEvaluation, ScenarioOutcome
 
-__all__ = ["EvaluationReport", "Evaluator", "ExpectedFinding", "FindingMatcher", "ScenarioEvaluation"]
+__all__ = ["EvaluationReport", "Evaluator", "ExpectedEntity", "ExpectedFinding", "ExpectedRelationship", "FindingMatcher", "ScenarioEvaluation", "ScenarioOutcome"]

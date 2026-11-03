@@ -1,7 +1,26 @@
 {
   "expect_flag": true,
   "description": "Left deletes validate_coupon (coupons deprecated), but Right's unchanged process_order still calls it. Git merges cleanly, but the merged code will NameError at runtime.",
-  "expected_interactions": [
-    {"kind": "deleted_dependency", "entities": ["validate_coupon", "process_order"]}
-  ]
+  "expected_findings": [
+    {
+      "rule_id": "MR-PY-DEL-001",
+      "entities": [
+        {
+          "symbol": "merged.validate_coupon",
+          "role": "deleted_definition"
+        },
+        {
+          "symbol": "merged.process_order",
+          "role": "surviving_call_site"
+        }
+      ],
+      "relationship": {
+        "kind": "call",
+        "source": "merged.process_order",
+        "target": "merged.validate_coupon",
+        "condition": "validate_coupon"
+      }
+    }
+  ],
+  "deferred_expectations": []
 }

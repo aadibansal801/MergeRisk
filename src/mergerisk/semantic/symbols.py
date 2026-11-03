@@ -16,6 +16,8 @@ class SymbolDefinition:
     parameters: list[str]
     is_method: bool
     parent_class: str | None
+    is_staticmethod: bool = False
+    is_classmethod: bool = False
 
 
 class SymbolTable:

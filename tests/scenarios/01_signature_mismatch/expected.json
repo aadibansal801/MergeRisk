@@ -1,13 +1,26 @@
 {
   "expect_flag": true,
   "description": "Left adds a required tax_rate param to calculate_total; Right independently reformats print_invoice, which still calls calculate_total with the old 2-arg signature. Real runtime TypeError after merge.",
-  "expected_interactions": [
+  "expected_findings": [
     {
-      "kind": "signature_mismatch",
+      "rule_id": "MR-PY-SIG-002",
       "entities": [
-        "calculate_total",
-        "print_invoice"
-      ]
+        {
+          "symbol": "merged.calculate_total",
+          "role": "changed_signature"
+        },
+        {
+          "symbol": "merged.print_invoice",
+          "role": "affected_call_site"
+        }
+      ],
+      "relationship": {
+        "kind": "call",
+        "source": "merged.print_invoice",
+        "target": "merged.calculate_total",
+        "condition": "call omits required argument(s): tax_rate"
+      }
     }
-  ]
+  ],
+  "deferred_expectations": []
 }
