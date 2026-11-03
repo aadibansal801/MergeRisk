@@ -1,0 +1,5 @@
+{
+  "description": "The syntax failure is present in the base and both parents, so it is not a merge-induced finding.",
+  "expected_findings": [],
+  "deferred_expectations": []
+}

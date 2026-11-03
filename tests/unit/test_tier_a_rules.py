@@ -74,6 +74,15 @@ def test_defaulted_added_parameter_does_not_report_mismatch() -> None:
     assert SignatureMismatchRule().evaluate(_context(base, left, right, candidate)) == []
 
 
+def test_preexisting_incompatible_call_is_not_attributed_to_merge() -> None:
+    base = "def fetch(url):\n    return url\n\ndef caller():\n    return fetch(invalid=True)\n"
+    left = "def fetch(url, timeout=5):\n    return url\n\ndef caller():\n    return fetch(invalid=True)\n"
+    right = base.replace("return fetch(invalid=True)", "print('right change')\n    return fetch(invalid=True)")
+    candidate = left.replace("return fetch(invalid=True)", "print('right change')\n    return fetch(invalid=True)")
+
+    assert SignatureMismatchRule().evaluate(_context(base, left, right, candidate)) == []
+
+
 def test_unexpected_keyword_reports_signature_mismatch() -> None:
     base = "def fetch(url):\n    return url\n"
     left = "def fetch(url, timeout=5):\n    return url\n"

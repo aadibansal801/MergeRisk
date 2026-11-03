@@ -1,0 +1,46 @@
+{
+  "benchmark": {
+    "corpus_sha256": "b202d0e96b8ba20aa4378e80c1864d2223b142d2fe7c2b3c5ae3eff9ebb0626a",
+    "name": "MergeRisk original v1 scenario corpus",
+    "scenario_count": 16,
+    "version": "legacy-expected_interactions"
+  },
+  "confusion_matrix": {
+    "fn": 0,
+    "fp": 4,
+    "tn": 5,
+    "tp": 11
+  },
+  "coverage_denominators": {
+    "scenario_execution": "All 16 original scenarios completed without a harness error.",
+    "semantic_analysis_completeness": "Not measured by the original evaluator; coverage=1.0 means only that each scenario ran."
+  },
+  "evaluator_version": "pre-MR2-002 evaluator at e2189a2",
+  "git_commit": "e2189a235ab200b1bd400053f172a77c9103c90c",
+  "limitations": [
+    "The original matcher accepted rule ID plus a subset of symbols; these scores are historical, not finding-identity-correct.",
+    "Original evaluator had no partial, timeout, or unsupported outcomes.",
+    "Ground truth and detector pipeline differ from the post-M2 benchmark; numerical comparison is not valid."
+  ],
+  "metrics": {
+    "complete_coverage": 1.0,
+    "coverage": 1.0,
+    "f1": 0.846153846153846,
+    "precision": 0.7333333333333333,
+    "recall": 1.0
+  },
+  "outcome_counts": {
+    "error": 0,
+    "partial": 0,
+    "success": 16,
+    "timeout": 0,
+    "unsupported": 0
+  },
+  "report_kind": "historical-pre-change-baseline",
+  "report_version": "1",
+  "reproduction": [
+    "git worktree add --detach .m5-baseline e2189a235ab200b1bd400053f172a77c9103c90c",
+    "cd .m5-baseline && python -B tests/run_eval.py"
+  ],
+  "run_date_utc": "2026-11-03"
+}

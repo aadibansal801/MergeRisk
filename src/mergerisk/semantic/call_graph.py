@@ -32,6 +32,8 @@ class CallSite:
     status: ResolutionStatus
     resolved_target: SymbolDefinition | None = None
     candidates: tuple[SymbolDefinition, ...] = ()
+    has_star_args: bool = False
+    has_star_kwargs: bool = False
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,92 @@ class _ModuleModel:
     file_path: str
     module_name: str
     tree: ast.Module
+
+
+class _LocalBindingCollector(ast.NodeVisitor):
+    """Collect conservative function-local names without entering nested scopes."""
+
+    def __init__(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        self.names = {
+            argument.arg
+            for argument in (
+                *node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs,
+                *((node.args.vararg,) if node.args.vararg is not None else ()),
+                *((node.args.kwarg,) if node.args.kwarg is not None else ()),
+            )
+        }
+        self.declared_global: set[str] = set()
+        self.declared_nonlocal: set[str] = set()
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            self.names.add(node.id)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        self.names.update(alias.asname or alias.name.split(".", 1)[0] for alias in node.names)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        self.names.update(alias.asname or alias.name for alias in node.names)
+
+    def visit_Global(self, node: ast.Global) -> None:
+        self.declared_global.update(node.names)
+
+    def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
+        self.declared_nonlocal.update(node.names)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self.names.add(node.name)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        return
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        if node.name:
+            self.names.add(node.name)
+        if node.type is not None:
+            self.visit(node.type)
+        for statement in node.body:
+            self.visit(statement)
+
+    def visit_MatchAs(self, node: ast.MatchAs) -> None:
+        if node.name:
+            self.names.add(node.name)
+        if node.pattern is not None:
+            self.visit(node.pattern)
+
+    def visit_MatchStar(self, node: ast.MatchStar) -> None:
+        if node.name:
+            self.names.add(node.name)
+
+    def visit_MatchMapping(self, node: ast.MatchMapping) -> None:
+        if node.rest:
+            self.names.add(node.rest)
+        for pattern in node.patterns:
+            self.visit(pattern)
+
+    def visit_MatchClass(self, node: ast.MatchClass) -> None:
+        for pattern in (*node.patterns, *node.kwd_patterns):
+            self.visit(pattern)
+        self.visit(node.cls)
+
+    def visit_MatchSequence(self, node: ast.MatchSequence) -> None:
+        for pattern in node.patterns:
+            self.visit(pattern)
+
+    def visit_MatchOr(self, node: ast.MatchOr) -> None:
+        for pattern in node.patterns:
+            self.visit(pattern)
+
+    def collect(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> set[str]:
+        for statement in node.body:
+            self.visit(statement)
+        return self.names - self.declared_global - self.declared_nonlocal
 
 
 class _DefinitionCollector(ast.NodeVisitor):
@@ -81,6 +169,16 @@ class _DefinitionCollector(ast.NodeVisitor):
             parameters=self._parameters(node.args),
             is_method=is_method,
             parent_class=parent_class,
+            is_staticmethod=any(
+                isinstance(decorator, ast.Name) and decorator.id == "staticmethod"
+                or isinstance(decorator, ast.Attribute) and decorator.attr == "staticmethod"
+                for decorator in node.decorator_list
+            ),
+            is_classmethod=any(
+                isinstance(decorator, ast.Name) and decorator.id == "classmethod"
+                or isinstance(decorator, ast.Attribute) and decorator.attr == "classmethod"
+                for decorator in node.decorator_list
+            ),
         ))
         self.scopes.append(node.name)
         self.scope_is_class.append(False)
@@ -117,6 +215,7 @@ class _CallCollector(ast.NodeVisitor):
         self.scopes = [model.module_name] if model.module_name else ["__root__"]
         self.class_scopes: list[str] = []
         self.function_scopes: list[str] = []
+        self.local_bindings: list[set[str]] = []
         self.caller = self.scopes[0]
         self.calls: list[CallSite] = []
 
@@ -158,8 +257,10 @@ class _CallCollector(ast.NodeVisitor):
         self.scopes.append(node.name)
         self.caller = qualified_name
         self.function_scopes.append(qualified_name)
+        self.local_bindings.append(_LocalBindingCollector(node).collect(node))
         for statement in node.body:
             self.visit(statement)
+        self.local_bindings.pop()
         self.function_scopes.pop()
         self.caller = previous_caller
         self.scopes.pop()
@@ -173,6 +274,7 @@ class _CallCollector(ast.NodeVisitor):
             self.bindings,
             ".".join(self.scopes),
             self.function_scopes,
+            set().union(*self.local_bindings) if self.local_bindings else set(),
         )
         self.calls.append(CallSite(
             caller_symbol=self.caller,
@@ -185,8 +287,25 @@ class _CallCollector(ast.NodeVisitor):
             status=status,
             resolved_target=target,
             candidates=tuple(candidates),
+            has_star_args=any(isinstance(argument, ast.Starred) for argument in node.args),
+            has_star_kwargs=any(keyword.arg is None for keyword in node.keywords),
         ))
         self.generic_visit(node)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        for expression in (*node.args.defaults, *(item for item in node.args.kw_defaults if item is not None)):
+            self.visit(expression)
+        parameters = {
+            argument.arg
+            for argument in (
+                *node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs,
+                *((node.args.vararg,) if node.args.vararg is not None else ()),
+                *((node.args.kwarg,) if node.args.kwarg is not None else ()),
+            )
+        }
+        self.local_bindings.append(parameters)
+        self.visit(node.body)
+        self.local_bindings.pop()
 
 
 class CallGraphBuilder:
@@ -273,6 +392,7 @@ class CallGraphBuilder:
         bindings: list[ImportBinding],
         lexical_scope: str,
         function_scopes: list[str],
+        local_names: set[str],
     ) -> tuple[ResolutionStatus, SymbolDefinition | None, list[SymbolDefinition]]:
         """Resolve a call conservatively, retaining all plausible candidates."""
         dotted_name = self._dotted_name(callee)
@@ -282,6 +402,18 @@ class CallGraphBuilder:
             binding = self._binding_for_name(bindings, callee.id, lexical_scope)
             if binding is not None:
                 return self._resolve_binding_call(binding, "", callee.id)
+            if callee.id in local_names:
+                nested_definitions = [
+                    definition
+                    for function_scope in reversed(function_scopes)
+                    for definition in self.symbol_table.lookup_all_exact(f"{function_scope}.{callee.id}")
+                    if not definition.is_method
+                ]
+                if len(nested_definitions) == 1:
+                    return ResolutionStatus.RESOLVED, nested_definitions[0], nested_definitions
+                if len(nested_definitions) > 1:
+                    return ResolutionStatus.AMBIGUOUS, None, nested_definitions
+                return ResolutionStatus.UNRESOLVED, None, []
             lexical_names: list[str] = []
             for function_scope in reversed(function_scopes):
                 if function_scope.rpartition(".")[2] == callee.id:

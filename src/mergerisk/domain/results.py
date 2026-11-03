@@ -20,13 +20,13 @@ class CoverageSummary:
     files_analyzed: int
     files_skipped: int
     files_unsupported: int
-    unresolved_imports: int
+    unresolved_references: int
     dynamic_constructs_encountered: int
 
     def __post_init__(self) -> None:
         for field_name in (
             "files_analyzed", "files_skipped", "files_unsupported",
-            "unresolved_imports", "dynamic_constructs_encountered",
+            "unresolved_references", "dynamic_constructs_encountered",
         ):
             if getattr(self, field_name) < 0:
                 raise ValueError(f"{field_name} cannot be negative")
@@ -53,7 +53,7 @@ class AnalysisResult:
                 "files_analyzed": self.coverage.files_analyzed,
                 "files_skipped": self.coverage.files_skipped,
                 "files_unsupported": self.coverage.files_unsupported,
-                "unresolved_imports": self.coverage.unresolved_imports,
+                "unresolved_references": self.coverage.unresolved_references,
                 "dynamic_constructs_encountered": self.coverage.dynamic_constructs_encountered,
             },
             "manifest": dict(self.manifest),

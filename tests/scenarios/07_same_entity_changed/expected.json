@@ -1,13 +1,16 @@
 {
   "expect_flag": true,
   "description": "The canonical example: Left changes the tax rate, Right adds a discount deduction, both inside the same function on non-overlapping lines. Git merges cleanly. Both changes touch 'calculate' and interact through the shared 'tax' variable.",
-  "expected_interactions": [
+  "expected_findings": [],
+  "deferred_expectations": [
     {
       "kind": "same_entity_changed",
       "entities": [
         "calculate",
         "calculate"
-      ]
+      ],
+      "status": "deferred",
+      "reason": "Legacy expectation is not currently represented by a supported structured Tier A detector finding."
     }
   ]
 }

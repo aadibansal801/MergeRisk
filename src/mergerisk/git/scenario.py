@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import re
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 
 _TIMEOUT_SECONDS = 30
-_SHA1_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
+_OBJECT_ID_PATTERN = re.compile(r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
 _VERSION_PATTERN = re.compile(r"git version (\d+)\.(\d+)(?:\.(\d+))?")
 
 
@@ -56,17 +57,26 @@ class GitScenarioAssembler:
             raise GitVersionError(f"could not parse Git version: {self.git_version!r}")
         self._version = tuple(int(part or 0) for part in match.groups())
 
-    def _run_git(self, arguments: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
+    def _run_git(
+        self,
+        arguments: list[str],
+        check: bool = True,
+        *,
+        environment: dict[str, str] | None = None,
+        config_overrides: list[str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
         """Run a bounded Git command and retain stderr for useful diagnostics."""
         try:
             result = subprocess.run(
-                ["git", "-C", str(self.repo_path), *arguments],
+                ["git", *(part for setting in (config_overrides or []) for part in ("-c", setting)),
+                 "-C", str(self.repo_path), *arguments],
                 check=False,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
                 errors="surrogateescape",
                 timeout=_TIMEOUT_SECONDS,
+                env=environment,
             )
         except subprocess.TimeoutExpired as error:
             raise GitCommandError(
@@ -80,29 +90,33 @@ class GitScenarioAssembler:
         return result
 
     def resolve_commit(self, rev: str) -> str:
-        """Resolve a commitish to a full SHA-1 commit identifier."""
+        """Resolve a commitish to a full Git object identifier."""
         if not rev or "\x00" in rev:
             raise ValueError("revision must be a non-empty Git revision expression")
         result = self._run_git(["rev-parse", "--verify", "--end-of-options", f"{rev}^{{commit}}"])
         commit = result.stdout.strip().lower()
-        if _SHA1_PATTERN.fullmatch(commit) is None:
-            raise GitCommandError(f"revision did not resolve to a full 40-character SHA-1 commit: {rev!r}")
+        if _OBJECT_ID_PATTERN.fullmatch(commit) is None:
+            raise GitCommandError(f"revision did not resolve to a full SHA-1 or SHA-256 commit: {rev!r}")
         return commit
 
     def compute_merge_base(self, left: str, right: str) -> str:
         """Return the unique merge base of two resolved revisions."""
         left_commit = self.resolve_commit(left)
         right_commit = self.resolve_commit(right)
-        result = self._run_git(["merge-base", left_commit, right_commit], check=False)
+        result = self._run_git(["merge-base", "--all", left_commit, right_commit], check=False)
         if result.returncode == 1 and not result.stdout.strip():
             raise UnresolvedParentError(f"no merge base exists between {left!r} and {right!r}")
         if result.returncode != 0:
             detail = result.stderr.strip() or result.stdout.strip() or "no diagnostic output"
             raise GitCommandError(f"git merge-base failed ({result.returncode}): {detail}")
-        base = result.stdout.strip().lower()
-        if _SHA1_PATTERN.fullmatch(base) is None:
-            raise GitCommandError(f"git merge-base returned an invalid commit identifier: {base!r}")
-        return base
+        bases = sorted(set(line.strip().lower() for line in result.stdout.splitlines() if line.strip()))
+        if len(bases) != 1:
+            raise UnresolvedParentError(
+                f"multiple merge bases exist between {left!r} and {right!r}; criss-cross merges are unsupported"
+            )
+        if _OBJECT_ID_PATTERN.fullmatch(bases[0]) is None:
+            raise GitCommandError(f"git merge-base returned an invalid commit identifier: {bases[0]!r}")
+        return bases[0]
 
     def create_candidate_tree(self, base: str, left: str, right: str) -> tuple[str | None, bool, list[str]]:
         """Compute the candidate tree with merge-tree, without updating refs or index."""
@@ -112,12 +126,15 @@ class GitScenarioAssembler:
         if self._version < (2, 38, 0):
             return self._create_candidate_tree_legacy(base_commit, left_commit, right_commit)
 
+        safe_environment, safe_overrides = self._safe_merge_environment()
         result = self._run_git(
             [
                 "merge-tree", "--write-tree", "--messages", "--name-only", "-z",
                 f"--merge-base={base_commit}", left_commit, right_commit,
             ],
             check=False,
+            environment=safe_environment,
+            config_overrides=safe_overrides,
         )
         if result.returncode not in (0, 1):
             detail = result.stderr.strip() or result.stdout.strip() or "no diagnostic output"
@@ -125,10 +142,36 @@ class GitScenarioAssembler:
 
         output_parts = result.stdout.split("\x00")
         first = output_parts[0].strip() if output_parts else ""
-        merge_tree = first if _SHA1_PATTERN.fullmatch(first) else None
+        merge_tree = first if _OBJECT_ID_PATTERN.fullmatch(first) else None
         is_clean = result.returncode == 0
         conflict_files = [] if is_clean else self._parse_conflict_files_from_messages(result.stdout)
         return merge_tree, is_clean, conflict_files
+
+    def _safe_merge_environment(self) -> tuple[dict[str, str], list[str]]:
+        """Prevent configured external merge drivers from executing during analysis."""
+        environment = os.environ.copy()
+        for key in tuple(environment):
+            if key in {"GIT_CONFIG", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"}:
+                environment.pop(key, None)
+            elif key.startswith("GIT_CONFIG_KEY_") or key.startswith("GIT_CONFIG_VALUE_"):
+                environment.pop(key, None)
+        environment["GIT_CONFIG_NOSYSTEM"] = "1"
+        environment["GIT_CONFIG_GLOBAL"] = os.devnull
+
+        configured = self._run_git(
+            ["config", "--local", "--name-only", "--get-regexp", r"^merge\..*\.driver$"],
+            check=False,
+            environment=environment,
+        )
+        if configured.returncode not in (0, 1):
+            detail = configured.stderr.strip() or "could not inspect local merge-driver configuration"
+            raise GitCommandError(detail)
+        overrides: list[str] = ["merge.renormalize=false"]
+        for key in configured.stdout.splitlines():
+            if not re.fullmatch(r"merge\.[A-Za-z0-9._-]+\.driver", key, flags=re.IGNORECASE):
+                raise GitCommandError(f"cannot safely disable configured merge driver key: {key!r}")
+            overrides.append(f"{key}=")
+        return environment, overrides
 
     def _create_candidate_tree_legacy(self, base: str, left: str, right: str) -> tuple[str | None, bool, list[str]]:
         """Use a private temporary index on Git versions predating merge-tree --write-tree."""
@@ -204,11 +247,12 @@ class GitScenarioAssembler:
         """Resolve both heads and their base, then create the candidate merge tree."""
         left_commit = self.resolve_commit(left_rev)
         right_commit = self.resolve_commit(right_rev)
-        base_commit = (
-            self.resolve_commit(explicit_base)
-            if explicit_base is not None
-            else self.compute_merge_base(left_commit, right_commit)
-        )
+        computed_base = self.compute_merge_base(left_commit, right_commit)
+        base_commit = self.resolve_commit(explicit_base) if explicit_base is not None else computed_base
+        if explicit_base is not None and base_commit != computed_base:
+            raise ValueError(
+                f"explicit base {explicit_base!r} is not the selected merge base of {left_rev!r} and {right_rev!r}"
+            )
         merge_tree, is_clean, conflict_files = self.create_candidate_tree(
             base_commit, left_commit, right_commit,
         )

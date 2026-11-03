@@ -1,0 +1,220 @@
+{
+  "benchmark": {
+    "corpus_sha256": "e6a1aaab6394f996ff029db9446349817468dee511b4aae7a1439b0543f802b8",
+    "name": "MergeRisk v1 scenarios with M2 canonical expectations",
+    "scenario_count": 16,
+    "supported_scope": "Scenarios without deferred expectations; unsupported cases remain in overall coverage.",
+    "version": "M2-canonical-ground-truth"
+  },
+  "deferred_expectation_count": 7,
+  "evaluator_version": "MR2-002 M1-M4, strict relationships and explicit outcomes",
+  "git_commit": "db6fbe5be053c1b48d3ac564933f3cd5a1bd4efa",
+  "limitations": [
+    "Small, hand-authored fixture corpus; not representative of general repositories.",
+    "Partial cases contribute confirmed TP/FP findings; unmatched expectations are reported unresolved and excluded from FN.",
+    "Error and timeout cases are reported but excluded from confusion-matrix scoring.",
+    "Unsupported/deferred cases are excluded from supported-scope metrics and are not clean negatives.",
+    "Perfect supported-scope scores do not imply detector completeness or safety."
+  ],
+  "outcome_counts": {
+    "error": 0,
+    "partial": 2,
+    "success": 8,
+    "timeout": 0,
+    "unsupported": 6
+  },
+  "overall_scenario_coverage": {
+    "analyzed_scenarios": 10,
+    "complete_coverage": 0.5,
+    "complete_scenarios": 8,
+    "coverage": 0.625,
+    "total_scenarios": 16
+  },
+  "report_kind": "post-change",
+  "report_version": "1",
+  "reproduction": [
+    "python -B tests/generate_eval_reports.py",
+    "python -B tests/run_eval.py"
+  ],
+  "run_date_utc": "2026-11-03",
+  "scenarios": [
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 1,
+      "outcome": "success",
+      "scenario_id": "01_signature_mismatch",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "expected_findings": 0,
+      "outcome": "unsupported",
+      "scenario_id": "02_shared_state_write",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 0,
+      "outcome": "success",
+      "scenario_id": "03_shared_state_read_only_edge_case",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "expected_findings": 0,
+      "outcome": "unsupported",
+      "scenario_id": "04_call_dependency",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "expected_findings": 0,
+      "outcome": "unsupported",
+      "scenario_id": "05_duplicate_addition",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 2 call site(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.",
+      "expected_findings": 1,
+      "outcome": "partial",
+      "scenario_id": "06_deleted_dependency",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "expected_findings": 0,
+      "outcome": "unsupported",
+      "scenario_id": "07_same_entity_changed",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 0,
+      "outcome": "success",
+      "scenario_id": "08_true_negative_unrelated",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 0,
+      "outcome": "success",
+      "scenario_id": "09_true_negative_common_helper",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 0,
+      "outcome": "success",
+      "scenario_id": "10_both_delete_same_function_safe",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 1,
+      "outcome": "success",
+      "scenario_id": "11_class_method_signature_mismatch",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 0,
+      "outcome": "success",
+      "scenario_id": "12_cosmetic_change_false_positive_trap",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "2 expectation(s) are deferred",
+      "expected_findings": 0,
+      "outcome": "unsupported",
+      "scenario_id": "scenario_01_signature_change",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "expected_findings": 0,
+      "outcome": "success",
+      "scenario_id": "scenario_02_unrelated_additions",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "expected_findings": 0,
+      "outcome": "unsupported",
+      "scenario_id": "scenario_03_readonly_shared_global",
+      "unresolved_expected_findings": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 1 call site(s) remain unresolved or ambiguous.",
+      "expected_findings": 1,
+      "outcome": "partial",
+      "scenario_id": "scenario_04_deleted_function",
+      "unresolved_expected_findings": 0
+    }
+  ],
+  "supported_scope": {
+    "analyzed_scenario_count": 10,
+    "complete_coverage": 0.8,
+    "coverage": 1.0,
+    "error_count": 0,
+    "expected_clean_fp_count": 0,
+    "expected_clean_scenario_count": 6,
+    "f1": 1.0,
+    "false_positive_scenario_count": 0,
+    "fn_count": 0,
+    "fp_count": 0,
+    "fp_per_100_clean": 0.0,
+    "partial_count": 2,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "success_count": 8,
+    "supported_scenario_count": 10,
+    "timeout_count": 0,
+    "tn_count": 6,
+    "total_scenarios": 16,
+    "tp_count": 4,
+    "unresolved_expected_count": 0,
+    "unsupported_count": 6
+  },
+  "tier_a_outcome_counts": {
+    "error": 0,
+    "partial": 4,
+    "success": 8,
+    "timeout": 0,
+    "unsupported": 0
+  },
+  "tier_a_scope": {
+    "analyzed_scenario_count": 12,
+    "complete_coverage": 0.6666666666666666,
+    "coverage": 1.0,
+    "error_count": 0,
+    "expected_clean_fp_count": 0,
+    "expected_clean_scenario_count": 6,
+    "f1": 1.0,
+    "false_positive_scenario_count": 0,
+    "fn_count": 0,
+    "fp_count": 0,
+    "fp_per_100_clean": 0.0,
+    "partial_count": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "success_count": 8,
+    "supported_scenario_count": 12,
+    "timeout_count": 0,
+    "tn_count": 6,
+    "total_scenarios": 12,
+    "tp_count": 5,
+    "unresolved_expected_count": 0,
+    "unsupported_count": 0
+  },
+  "unsupported_scenarios": [
+    "02_shared_state_write",
+    "04_call_dependency",
+    "05_duplicate_addition",
+    "07_same_entity_changed",
+    "scenario_01_signature_change",
+    "scenario_03_readonly_shared_global"
+  ],
+  "working_tree_evaluator_sha256": "a660b332c2d3b18910ba21995be1819fd386d2ea5263bbf88415f5a318439850"
+}
