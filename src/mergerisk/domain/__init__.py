@@ -5,6 +5,7 @@ from .findings import (
     Confidence,
     EvidenceLevel,
     FindingStatus,
+    FindingRelationship,
     InvolvedEntity,
     Severity,
     SourceLocation,
@@ -16,6 +17,6 @@ from .revisions import BranchRole, MergeStatus, RevisionContext
 __all__ = [
     "AnalysisResult", "AnalysisStatus", "BranchRole", "CanonicalFinding",
     "Confidence", "CoverageSummary", "EvidenceLevel", "FindingStatus",
-    "InvolvedEntity", "MergeStatus", "RevisionContext", "Severity",
+    "FindingRelationship", "InvolvedEntity", "MergeStatus", "RevisionContext", "Severity",
     "SourceLocation", "ValidationRecord",
 ]
