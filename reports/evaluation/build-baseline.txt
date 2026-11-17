@@ -1,0 +1,100 @@
+SUPPORTED RULE BENCHMARK (syntax, deleted symbols, signatures, shared globals, and clean controls)
+  [MATCHED] 01_signature_mismatch — 1 TP, 0 FP, 0 FN
+  [TN] 03_shared_state_read_only_edge_case — 0 TP, 0 FP, 0 FN
+  [PARTIAL] 06_deleted_dependency — 1 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.
+  [TN] 08_true_negative_unrelated — 0 TP, 0 FP, 0 FN
+  [TN] 09_true_negative_common_helper — 0 TP, 0 FP, 0 FN
+  [TN] 10_both_delete_same_function_safe — 0 TP, 0 FP, 0 FN
+  [MATCHED] 11_class_method_signature_mismatch — 1 TP, 0 FP, 0 FN
+  [TN] 12_cosmetic_change_false_positive_trap — 0 TP, 0 FP, 0 FN
+  [MATCHED] 13_shared_global_write — 1 TP, 0 FP, 0 FN
+  [TN] 14_shared_global_read_only — 0 TP, 0 FP, 0 FN
+  [TN] 15_preexisting_shared_global — 0 TP, 0 FP, 0 FN
+  [PARTIAL] 16_global_attribute_mutation_unresolved — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.
+  [MATCHED] 17_recursive_signature_mismatch — 1 TP, 0 FP, 0 FN
+  [TN] scenario_02_unrelated_additions — 0 TP, 0 FP, 0 FN
+  [PARTIAL] scenario_04_deleted_function — 1 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; 1 call or global-state reference(s) remain unresolved or ambiguous.
+  [PARTIAL] syntax_error_introduced — 1 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; Unsupported parse construct at merged.py:1: invalid syntax
+  [PARTIAL] syntax_error_preexisting — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; Unsupported parse construct at merged.py:1: invalid syntax; Unsupported base snapshot at merged.py:1: invalid syntax; Unsupported left snapshot at merged.py:1: invalid syntax; Unsupported right snapshot at merged.py:1: invalid syntax
+
+================================================================
+   TIER A FINDING-LEVEL SUMMARY
+================================================================
+Total scenarios: 17
+  TP: 7   FP: 0   TN: 8   FN: 0
+  Unresolved expected findings in partial analyses: 0
+Outcomes: success=12, partial=5, error=0, timeout=0, unsupported=0
+Coverage: analyzed 17/17 supported scenarios (1.00); complete 12/17 (0.71)
+Expected-clean denominator: 8
+
+Precision: 1.00   (TP / (TP+FP))
+Recall:    1.00   (TP / (TP+FN))
+F1:        1.00
+Specificity: 1.00   (TN scenarios / successfully analyzed expected-clean scenarios)
+FP findings per 100 expected-clean scenarios: 0.00
+Scenario counts: 8 TN / 8 expected-clean; 0 expected-clean scenarios with an FP
+================================================================
+Per-rule findings:
+  MR-PY-DEL-001: 2 TP, 0 FP, 0 FN; P=1.00, R=1.00, F1=1.00
+  MR-PY-SIG-002: 3 TP, 0 FP, 0 FN; P=1.00, R=1.00, F1=1.00
+  MR-PY-STATE-002: 1 TP, 0 FP, 0 FN; P=1.00, R=1.00, F1=1.00
+  MR-PY-SYNTAX-001: 1 TP, 0 FP, 0 FN; P=1.00, R=1.00, F1=1.00
+
+BROADER LEGACY EXPECTATION BENCHMARK (contains unsupported legacy-only rules)
+  [MATCHED] 01_signature_mismatch — 1 TP, 0 FP, 0 FN
+  [UNSUPPORTED] 02_shared_state_write — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: 1 expectation(s) are deferred
+  [TN] 03_shared_state_read_only_edge_case — 0 TP, 0 FP, 0 FN
+  [UNSUPPORTED] 04_call_dependency — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: 1 expectation(s) are deferred
+  [UNSUPPORTED] 05_duplicate_addition — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: 1 expectation(s) are deferred
+  [PARTIAL] 06_deleted_dependency — 1 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.
+  [UNSUPPORTED] 07_same_entity_changed — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: 1 expectation(s) are deferred
+  [TN] 08_true_negative_unrelated — 0 TP, 0 FP, 0 FN
+  [TN] 09_true_negative_common_helper — 0 TP, 0 FP, 0 FN
+  [TN] 10_both_delete_same_function_safe — 0 TP, 0 FP, 0 FN
+  [MATCHED] 11_class_method_signature_mismatch — 1 TP, 0 FP, 0 FN
+  [TN] 12_cosmetic_change_false_positive_trap — 0 TP, 0 FP, 0 FN
+  [MATCHED] 13_shared_global_write — 1 TP, 0 FP, 0 FN
+  [TN] 14_shared_global_read_only — 0 TP, 0 FP, 0 FN
+  [TN] 15_preexisting_shared_global — 0 TP, 0 FP, 0 FN
+  [PARTIAL] 16_global_attribute_mutation_unresolved — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.
+  [MATCHED] 17_recursive_signature_mismatch — 1 TP, 0 FP, 0 FN
+  [UNSUPPORTED] scenario_01_signature_change — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: 2 expectation(s) are deferred
+  [TN] scenario_02_unrelated_additions — 0 TP, 0 FP, 0 FN
+  [UNSUPPORTED] scenario_03_readonly_shared_global — 0 TP, 0 FP, 0 FN
+        Analysis diagnostics: 1 expectation(s) are deferred
+  [PARTIAL] scenario_04_deleted_function — 1 TP, 0 FP, 0 FN
+        Analysis diagnostics: Analysis used the canonical Tier A Python pipeline.; 1 call or global-state reference(s) remain unresolved or ambiguous.
+
+================================================================
+   BROADER SUPPORTED-SCOPE SUMMARY
+================================================================
+Total scenarios: 21
+  TP: 6   FP: 0   TN: 8   FN: 0
+  Unresolved expected findings in partial analyses: 0
+Outcomes: success=12, partial=3, error=0, timeout=0, unsupported=6
+Coverage: analyzed 15/15 supported scenarios (1.00); complete 12/15 (0.80)
+Expected-clean denominator: 8
+
+Precision: 1.00   (TP / (TP+FP))
+Recall:    1.00   (TP / (TP+FN))
+F1:        1.00
+Specificity: 1.00   (TN scenarios / successfully analyzed expected-clean scenarios)
+FP findings per 100 expected-clean scenarios: 0.00
+Scenario counts: 8 TN / 8 expected-clean; 0 expected-clean scenarios with an FP
+================================================================
+Per-rule findings:
+  MR-PY-DEL-001: 2 TP, 0 FP, 0 FN; P=1.00, R=1.00, F1=1.00
+  MR-PY-SIG-002: 3 TP, 0 FP, 0 FN; P=1.00, R=1.00, F1=1.00
+  MR-PY-STATE-002: 1 TP, 0 FP, 0 FN; P=1.00, R=1.00, F1=1.00

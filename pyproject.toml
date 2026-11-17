@@ -9,6 +9,9 @@ description = "Static post-merge semantic risk analysis for Python repositories"
 requires-python = ">=3.10"
 dependencies = []
 
+[project.scripts]
+mergerisk = "mergerisk.cli:main"
+
 [project.optional-dependencies]
 test = ["pytest>=8"]
 
@@ -27,5 +30,4 @@ packages = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 testpaths = ["tests"]
