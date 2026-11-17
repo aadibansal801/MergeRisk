@@ -114,15 +114,18 @@ This command is intended for small fixtures and reproductions. For complete repo
 
 ## What it checks
 
-The canonical v1.5 pipeline currently runs three deterministic rules:
+The canonical v1.5 pipeline currently runs four deterministic rules:
 
 | Rule ID | Check | Typical severity |
 | --- | --- | --- |
 | `MR-PY-SYNTAX-001` | Candidate Python syntax errors attributable to the merge, when the corresponding available parent snapshots parse successfully. | Critical |
 | `MR-PY-DEL-001` | A resolved call in the candidate still targets a function or method deleted on the other branch. The caller is resolved against the opposing branch, including supported local import aliases. | High |
 | `MR-PY-SIG-002` | A cross-branch call no longer satisfies a changed callable's Python argument binding contract. | High |
+| `MR-PY-STATE-002` | Independently changed functions in opposing branches newly access the same direct module global and at least one access writes or updates its binding. | Medium |
 
 The signature check covers required positional and keyword-only parameters, excess positional arguments, unexpected or duplicate keywords, bound `self`/`cls` methods, and known static methods. Optional default changes alone are not treated as binding failures.
+
+The shared-global check indexes direct assignments to module-level names and direct reads and writes in functions. Global identities include the module name, so same-named globals in different modules do not collide. Reads are kept separate from writes; augmented assignments are read/write accesses, while references in their value expressions remain reads. Existing access patterns in the merge base are not attributed to the merge. Attribute and subscript access, object mutation, dynamic dispatch, and cross-module state references remain unresolved and make coverage partial when encountered.
 
 Tracked Python files are classified during repository inventory. Common generated or vendored directories such as `.git/`, `.venv/`, `venv/`, `build/`, and `vendor/` are ignored by default. Binary and unsupported Python content is excluded from the relevant source analysis and reflected in diagnostics or coverage when detected.
 
@@ -151,6 +154,7 @@ MergeRisk is a static Python analyzer with deliberately bounded checks. It does 
 - Execute Python code, builds, linters, or test suites.
 - Analyze languages other than Python or establish arbitrary runtime behavior.
 - Confirm dynamic dispatch, calls whose target cannot be resolved, ambiguous duplicate definitions, or complete binding for `*args` and `**kwargs` calls.
+- Resolve shared mutable state through attributes, subscripts, imported aliases, or runtime object behavior. Direct same-module global reads and writes are supported; other state relationships are not.
 - Infer unknown receiver types. For example, a call such as `client.fetch()` cannot be tied to a class method unless the receiver can be resolved by the supported analysis.
 - Guarantee findings for unsupported syntax, unresolved imports, or source files excluded from analysis.
 - Resolve candidate Git merges with textual conflicts.
@@ -167,10 +171,10 @@ python tests/run_eval.py
 
 The evaluator uses the same canonical source-snapshot orchestrator as the fixture path. It prints two scopes:
 
-1. **Tier A benchmark** — syntax errors, deleted-symbol cases, signature mismatches, and expected-clean controls. This includes the cases under `tests/tier_a_scenarios/` as well as applicable cases from `tests/scenarios/`.
-2. **Broader legacy expectation benchmark** — all original scenarios, including expectations for rules that are not implemented by the canonical v1.5 pipeline.
+1. **Supported-rule benchmark** — syntax errors, deleted-symbol cases, signature mismatches, direct shared-global interactions, and expected-clean controls. This includes cases under `tests/tier_a_scenarios/` and supported cases from `tests/scenarios/`.
+2. **Broader benchmark** — all scenarios, including legacy expectations that remain explicitly unsupported or deferred.
 
-Expected findings are matched one-to-one by rule ID and required symbol subset. Unmatched expected findings count as false negatives; unmatched actual findings count as false positives. A true negative is an expected-clean scenario with no findings and no analysis diagnostic. Precision, recall, and F1 are finding-level and include findings from partial analyses. Partial and failed analyses are reported separately. Specificity is scenario-level: true-negative scenarios divided by successfully analyzed expected-clean scenarios, excluding partial or failed clean cases.
+Expected findings are matched one-to-one by rule ID, exact affected entities and roles, and exact structured relationship identity. One symbol may appear more than once when it has distinct roles, as with a recursive call to a function whose signature changed. Unmatched expected findings in successful analyses count as false negatives; unmatched actual findings count as false positives. Partial analyses can contribute confirmed true and false positives, while unresolved expectations are excluded from false negatives. Unsupported, error, and timeout scenarios are reported separately and do not become clean negatives. A true negative requires a successful, expected-clean scenario with no findings.
 
 The corpus is small and hand-authored. Its metrics are regression indicators, not estimates of performance on arbitrary real-world repositories. The broader legacy benchmark intentionally includes older expectations outside current supported scope; its results should not be read as the canonical pipeline's supported-rule score.
 
@@ -187,7 +191,7 @@ MergeRisk/
 │   ├── git/                     # candidate merge assembly and immutable snapshots
 │   ├── reporting/               # text report formatting
 │   ├── rules/                   # canonical Tier A checks and retained v1 rule code
-│   └── semantic/                # symbol, import, and call-graph analysis
+│   └── semantic/                # symbols, imports, calls, and direct global accesses
 ├── detector/                    # retained legacy v1 compatibility implementation
 └── tests/
     ├── integration/             # Git scenario integration tests
