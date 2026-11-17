@@ -19,6 +19,7 @@ from mergerisk.domain import (
     ValidationRecord,
 )
 from mergerisk.eval import ExpectedEntity, ExpectedFinding, ExpectedRelationship, Evaluator, ScenarioOutcome
+from mergerisk.analysis.pipeline import AnalysisOrchestrator
 from mergerisk.rules.tier_a import SyntaxErrorRule, TierAContext
 
 
@@ -344,19 +345,58 @@ class EvaluatorTests(unittest.TestCase):
             reversed_actual = CanonicalFinding(**{**actual.__dict__, "relationships": (relation,)})
             self.assertFalse(matcher.matches(expected, reversed_actual))
 
-    def test_duplicate_symbol_rejected_but_repeated_roles_are_valid(self) -> None:
-        with self.assertRaisesRegex(ValueError, "duplicate symbols"):
+    def test_same_symbol_can_have_distinct_roles_but_duplicate_entity_role_is_invalid(self) -> None:
+        with self.assertRaisesRegex(ValueError, "duplicate entity-role pairs"):
             ExpectedFinding(
                 "MR-PY-X",
-                (ExpectedEntity("A", "caller"), ExpectedEntity("A", "target")),
+                (ExpectedEntity("A", "caller"), ExpectedEntity("A", "caller")),
                 ExpectedRelationship("call", "A", "B", "invoke"),
             )
         accepted = ExpectedFinding(
             "MR-PY-X",
-            (ExpectedEntity("A", "caller"), ExpectedEntity("B", "caller")),
+            (ExpectedEntity("A", "caller"), ExpectedEntity("A", "target"), ExpectedEntity("B", "caller")),
             ExpectedRelationship("call", "A", "B", "invoke"),
         )
-        self.assertEqual(len(accepted.entities), 2)
+        self.assertEqual(len(accepted.entities), 3)
+
+    def test_recursive_signature_finding_matches_all_roles_for_the_same_symbol(self) -> None:
+        base = "def recur(n):\n    if n <= 0: return 0\n    return recur(n - 1)\n"
+        left = "def recur(n, offset):\n    if n <= 0: return offset\n    return recur(n - 1)\n"
+        right = "def recur(n):\n    if n <= 0: return 0\n    print(n)\n    return recur(n - 1)\n"
+        merged = "def recur(n, offset):\n    if n <= 0: return offset\n    print(n)\n    return recur(n - 1)\n"
+        result = AnalysisOrchestrator().analyze_sources(
+            {"pkg/recur.py": base}, {"pkg/recur.py": left},
+            {"pkg/recur.py": right}, {"pkg/recur.py": merged},
+        )
+        self.assertEqual(len(result.findings), 1)
+        actual = result.findings[0]
+        self.assertEqual(
+            [(entity.symbol, entity.role) for entity in actual.entities],
+            [("pkg.recur.recur", "changed_signature"), ("pkg.recur.recur", "affected_call_site")],
+        )
+        expected = ExpectedFinding(
+            "MR-PY-SIG-002",
+            (ExpectedEntity("pkg.recur.recur", "changed_signature"),
+             ExpectedEntity("pkg.recur.recur", "affected_call_site")),
+            ExpectedRelationship("call", "pkg.recur.recur", "pkg.recur.recur",
+                                 "call omits required argument(s): offset"),
+        )
+        evaluation = self.evaluator.evaluate_scenario("recursive-signature", [expected], [actual])
+        self.assertEqual((len(evaluation.true_positives), len(evaluation.false_positives),
+                          len(evaluation.false_negatives)), (1, 0, 0))
+
+    def test_extra_actual_role_for_repeated_symbol_does_not_match(self) -> None:
+        expected = ExpectedFinding(
+            "MR-PY-X", (ExpectedEntity("A", "caller"), ExpectedEntity("A", "target")),
+            ExpectedRelationship("call", "A", "A", "invoke"),
+        )
+        actual = make_finding("MR-PY-X", "A")
+        actual = CanonicalFinding(
+            **{**actual.__dict__,
+               "entities": (*actual.entities, InvolvedEntity("A", "extra", BranchRole.RIGHT)),
+               "relationships": (FindingRelationship("call", "A", "A", "invoke"),)},
+        )
+        self.assertFalse(self.evaluator._matcher.matches(expected, actual))
 
     def test_schema_rejects_bad_types_and_mutable_collections(self) -> None:
         with self.assertRaisesRegex(TypeError, "rule_id"):

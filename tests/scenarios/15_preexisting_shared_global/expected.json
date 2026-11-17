@@ -1,0 +1,6 @@
+{
+  "expect_flag": false,
+  "description": "Existing global access patterns remain unchanged by both branches and are not attributed to the merge.",
+  "expected_findings": [],
+  "deferred_expectations": []
+}

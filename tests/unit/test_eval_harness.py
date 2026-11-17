@@ -21,7 +21,7 @@ class EvalHarnessTests(unittest.TestCase):
             for root in (ROOT / "tests" / "scenarios", ROOT / "tests" / "tier_a_scenarios")
             for path in root.glob("*/expected.json")
         ]
-        self.assertEqual(len(declarations), 18)
+        self.assertEqual(len(declarations), 23)
         supported_count = 0
         deferred_count = 0
         for directory in declarations:
@@ -31,11 +31,25 @@ class EvalHarnessTests(unittest.TestCase):
                 self.assertTrue(all(isinstance(item, run_eval.ExpectedFinding) for item in expected))
                 supported_count += len(expected)
                 deferred_count += len(spec["deferred_expectations"])
-        self.assertEqual(supported_count, 5)
+        self.assertEqual(supported_count, 7)
         self.assertEqual(deferred_count, 7)
 
     def test_harness_constructs_and_evaluates_migrated_expectation(self) -> None:
         directory = ROOT / "tests" / "scenarios" / "01_signature_mismatch"
+        evaluation = run_eval._run_scenario(directory)
+        self.assertEqual(len(evaluation.true_positives), 1)
+        self.assertEqual(evaluation.false_negatives, [])
+        self.assertEqual(evaluation.false_positives, [])
+
+    def test_harness_evaluates_new_shared_global_expectation(self) -> None:
+        directory = ROOT / "tests" / "scenarios" / "13_shared_global_write"
+        evaluation = run_eval._run_scenario(directory)
+        self.assertEqual(len(evaluation.true_positives), 1)
+        self.assertEqual(evaluation.false_negatives, [])
+        self.assertEqual(evaluation.false_positives, [])
+
+    def test_harness_evaluates_same_symbol_with_distinct_roles(self) -> None:
+        directory = ROOT / "tests" / "scenarios" / "17_recursive_signature_mismatch"
         evaluation = run_eval._run_scenario(directory)
         self.assertEqual(len(evaluation.true_positives), 1)
         self.assertEqual(evaluation.false_negatives, [])

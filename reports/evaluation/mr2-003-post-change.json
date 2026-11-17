@@ -1,0 +1,437 @@
+{
+  "benchmark": {
+    "corpus_fixture_count_including_syntax_controls": 23,
+    "corpus_sha256": "a72cdade8c9d3c49337999ddd7c9949463c456dde57fe49cee7f71efea153a2f",
+    "name": "MergeRisk canonical and legacy scenario corpus",
+    "scenario_count": 21,
+    "version": "M2-canonical-ground-truth-plus-MR2-003-direct-globals"
+  },
+  "confusion_matrix": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 8,
+    "tp": 6
+  },
+  "evaluator_version": "MR2-002 strict finding identity with MR2-003 direct-global rule",
+  "evaluator_working_tree_sha256": "d461493a6db1e1a99ebbed2fcd48cefbea7f92c0cb84c2f1b0d15c3d5935f772",
+  "git_branch": "feature/mr2-003-semantic-resolution",
+  "git_commit": "24ec69fe815d1d502203099802a77d23926bff1d",
+  "limitations": [
+    "The corpus is small and hand-authored; scores are regression indicators, not general accuracy estimates.",
+    "Direct module-global names are resolved; attribute, subscript, dynamic, and cross-module state are unresolved.",
+    "Legacy read-only expectations remain unchanged; the conflicting positive read-only expectation is still deferred.",
+    "Pre-existing access modes are excluded from merge attribution, even if a later edit changes unrelated behavior.",
+    "The existing MR2-002 baseline and post-change reports are preserved and are not comparable to this expanded corpus."
+  ],
+  "metrics": {
+    "complete_coverage": 0.8,
+    "coverage": 1.0,
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "total_complete_coverage": 0.5714285714285714,
+    "total_scenario_coverage": 0.7142857142857143
+  },
+  "milestone": "MR2-003 Direct Module-Global Read/Write Resolution",
+  "outcome_counts": {
+    "error": 0,
+    "partial": 3,
+    "success": 12,
+    "timeout": 0,
+    "unsupported": 6
+  },
+  "report_kind": "first-verified-post-change",
+  "report_version": "1",
+  "reproduction": [
+    "python -B tests/run_eval.py",
+    "python -B tests/generate_mr2_003_reports.py"
+  ],
+  "run_date_utc": "2026-11-03",
+  "scenarios": [
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "01_signature_mismatch",
+      "tp": 1,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "unsupported",
+      "scenario_id": "02_shared_state_write",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "03_shared_state_read_only_edge_case",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "unsupported",
+      "scenario_id": "04_call_dependency",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "unsupported",
+      "scenario_id": "05_duplicate_addition",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "06_deleted_dependency",
+      "tp": 1,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "unsupported",
+      "scenario_id": "07_same_entity_changed",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "08_true_negative_unrelated",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "09_true_negative_common_helper",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "10_both_delete_same_function_safe",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "11_class_method_signature_mismatch",
+      "tp": 1,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "12_cosmetic_change_false_positive_trap",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "13_shared_global_write",
+      "tp": 1,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "14_shared_global_read_only",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "15_preexisting_shared_global",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "16_global_attribute_mutation_unresolved",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "17_recursive_signature_mismatch",
+      "tp": 1,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "2 expectation(s) are deferred",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "unsupported",
+      "scenario_id": "scenario_01_signature_change",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "scenario_02_unrelated_additions",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "1 expectation(s) are deferred",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "unsupported",
+      "scenario_id": "scenario_03_readonly_shared_global",
+      "tp": 0,
+      "unresolved_expected": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 1 call or global-state reference(s) remain unresolved or ambiguous.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "scenario_04_deleted_function",
+      "tp": 1,
+      "unresolved_expected": 0
+    }
+  ],
+  "supported_rule_scenarios": [
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "01_signature_mismatch",
+      "tp": 1
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "03_shared_state_read_only_edge_case",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "06_deleted_dependency",
+      "tp": 1
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "08_true_negative_unrelated",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "09_true_negative_common_helper",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "10_both_delete_same_function_safe",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "11_class_method_signature_mismatch",
+      "tp": 1
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "12_cosmetic_change_false_positive_trap",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "13_shared_global_write",
+      "tp": 1
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "14_shared_global_read_only",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "15_preexisting_shared_global",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 2 call or global-state reference(s) remain unresolved or ambiguous.; 1 call site(s) require dynamic or star-argument binding support.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "16_global_attribute_mutation_unresolved",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "17_recursive_signature_mismatch",
+      "tp": 1
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "success",
+      "scenario_id": "scenario_02_unrelated_additions",
+      "tp": 0
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; 1 call or global-state reference(s) remain unresolved or ambiguous.",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "scenario_04_deleted_function",
+      "tp": 1
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; Unsupported parse construct at merged.py:1: invalid syntax",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "syntax_error_introduced",
+      "tp": 1
+    },
+    {
+      "diagnostics": "Analysis used the canonical Tier A Python pipeline.; Unsupported parse construct at merged.py:1: invalid syntax; Unsupported base snapshot at merged.py:1: invalid syntax; Unsupported left snapshot at merged.py:1: invalid syntax; Unsupported right snapshot at merged.py:1: invalid syntax",
+      "fn": 0,
+      "fp": 0,
+      "outcome": "partial",
+      "scenario_id": "syntax_error_preexisting",
+      "tp": 0
+    }
+  ],
+  "supported_rule_subset": {
+    "analyzed_scenario_count": 17,
+    "complete_coverage": 0.7058823529411765,
+    "coverage": 1.0,
+    "error_count": 0,
+    "expected_clean_fp_count": 0,
+    "expected_clean_scenario_count": 8,
+    "f1": 1.0,
+    "false_positive_scenario_count": 0,
+    "fn_count": 0,
+    "fp_count": 0,
+    "fp_per_100_clean": 0.0,
+    "partial_count": 5,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "success_count": 12,
+    "supported_scenario_count": 17,
+    "timeout_count": 0,
+    "tn_count": 8,
+    "total_scenarios": 17,
+    "tp_count": 7,
+    "unresolved_expected_count": 0,
+    "unsupported_count": 0
+  },
+  "supported_scope": {
+    "analyzed_scenario_count": 15,
+    "complete_coverage": 0.8,
+    "coverage": 1.0,
+    "error_count": 0,
+    "expected_clean_fp_count": 0,
+    "expected_clean_scenario_count": 8,
+    "f1": 1.0,
+    "false_positive_scenario_count": 0,
+    "fn_count": 0,
+    "fp_count": 0,
+    "fp_per_100_clean": 0.0,
+    "partial_count": 3,
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "success_count": 12,
+    "supported_scenario_count": 15,
+    "timeout_count": 0,
+    "tn_count": 8,
+    "total_scenarios": 21,
+    "tp_count": 6,
+    "unresolved_expected_count": 0,
+    "unsupported_count": 6
+  },
+  "unsupported_scenarios": [
+    "02_shared_state_write",
+    "04_call_dependency",
+    "05_duplicate_addition",
+    "07_same_entity_changed",
+    "scenario_01_signature_change",
+    "scenario_03_readonly_shared_global"
+  ]
+}

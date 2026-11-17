@@ -1,0 +1,21 @@
+{
+  "expect_flag": true,
+  "description": "Each branch adds a write to the same module global from a different function.",
+  "expected_findings": [
+    {
+      "rule_id": "MR-PY-STATE-002",
+      "entities": [
+        {"symbol": "merged.restock", "role": "changed_function"},
+        {"symbol": "merged.sell", "role": "changed_function"},
+        {"symbol": "merged.inventory_count", "role": "shared_module_global"}
+      ],
+      "relationship": {
+        "kind": "shared_global_access",
+        "source": "merged.restock",
+        "target": "merged.sell",
+        "condition": "merged.inventory_count"
+      }
+    }
+  ],
+  "deferred_expectations": []
+}

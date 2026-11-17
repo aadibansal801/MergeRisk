@@ -1,0 +1,6 @@
+{
+  "expect_flag": false,
+  "description": "Independently changed functions read one module global but do not write it.",
+  "expected_findings": [],
+  "deferred_expectations": []
+}

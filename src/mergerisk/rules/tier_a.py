@@ -21,6 +21,7 @@ from mergerisk.domain.findings import (
 from mergerisk.domain.revisions import BranchRole, RevisionContext
 from mergerisk.semantic.call_graph import CallGraphBuilder, CallSite, ResolutionStatus
 from mergerisk.semantic.imports import ImportResolver
+from mergerisk.semantic.global_state import GlobalAccess, GlobalAccessKind, GlobalStateAnalysis, GlobalStateResolver
 
 from .base import BaseRule
 
@@ -36,6 +37,7 @@ class TierAContext:
     base_sources: dict[str, str]
     left_sources: dict[str, str]
     right_sources: dict[str, str]
+    global_analyses: dict[str, GlobalStateAnalysis] | None = None
 
 
 def _finding(
@@ -418,3 +420,94 @@ class SignatureMismatchRule(BaseRule):
             if previous_error is not None:
                 return True
         return False
+
+
+class SharedGlobalWriteRule(BaseRule):
+    """Report a newly introduced cross-branch interaction on a direct module global."""
+
+    @property
+    def rule_id(self) -> str: return "MR-PY-STATE-002"
+    @property
+    def title(self) -> str: return "Independently changed functions share writable module state"
+    @property
+    def category(self) -> str: return "state_interaction"
+    @property
+    def severity(self) -> Severity: return Severity.MEDIUM
+
+    def evaluate(self, context: Any) -> list[CanonicalFinding]:
+        if not isinstance(context, TierAContext):
+            raise TypeError("SharedGlobalWriteRule requires TierAContext")
+        analyses = context.global_analyses or {
+            "base": GlobalStateResolver().analyze(context.base_sources),
+            "left": GlobalStateResolver().analyze(context.left_sources),
+            "right": GlobalStateResolver().analyze(context.right_sources),
+            "merge": GlobalStateResolver().analyze(context.candidate_sources),
+        }
+        base_keys = {(access.symbol, access.function, access.kind) for access in analyses["base"].accesses}
+        by_branch = {
+            BranchRole.LEFT: analyses["left"],
+            BranchRole.RIGHT: analyses["right"],
+        }
+        candidate: dict[tuple[str, str], list[GlobalAccess]] = {}
+        for access in analyses["merge"].accesses:
+            if access.kind is not GlobalAccessKind.UNRESOLVED_MUTATION:
+                candidate.setdefault((access.symbol, access.function), []).append(access)
+
+        edits = {
+            (edit.entity_qualified_name, edit.branch)
+            for edit in context.attributed_edits
+            if edit.branch in (BranchRole.LEFT, BranchRole.RIGHT)
+            and edit.op in (ChangeOp.ADD, ChangeOp.MODIFY)
+            and edit.kind in (EntityKind.FUNCTION, EntityKind.METHOD)
+        }
+        additions: dict[BranchRole, set[tuple[str, str, GlobalAccessKind]]] = {}
+        for branch, analysis in by_branch.items():
+            additions[branch] = {
+                (access.symbol, access.function, access.kind)
+                for access in analysis.accesses
+                if access.kind is not GlobalAccessKind.UNRESOLVED_MUTATION
+                and (access.symbol, access.function, access.kind) not in base_keys
+                and (access.function, branch) in edits
+            }
+
+        findings: list[CanonicalFinding] = []
+        for (symbol, left_function), left_accesses in sorted(candidate.items()):
+            left_kinds = {access.kind for access in left_accesses}
+            for (other_symbol, right_function), right_accesses in sorted(candidate.items()):
+                if symbol != other_symbol or left_function >= right_function:
+                    continue
+                right_kinds = {access.kind for access in right_accesses}
+                if not ({GlobalAccessKind.WRITE, GlobalAccessKind.READ_WRITE} & (left_kinds | right_kinds)):
+                    continue
+                for left_branch, right_branch in ((BranchRole.LEFT, BranchRole.RIGHT), (BranchRole.RIGHT, BranchRole.LEFT)):
+                    left_new = [kind for kind in left_kinds if (symbol, left_function, kind) in additions[left_branch]]
+                    right_new = [kind for kind in right_kinds if (symbol, right_function, kind) in additions[right_branch]]
+                    if not left_new or not right_new:
+                        continue
+                    left_location = min(left_accesses, key=lambda item: (item.path, item.line, item.column))
+                    right_location = min(right_accesses, key=lambda item: (item.path, item.line, item.column))
+                    locations = (
+                        SourceLocation(left_location.path, left_location.line, left_location.column, left_location.line, left_location.column + 1),
+                        SourceLocation(right_location.path, right_location.line, right_location.column, right_location.line, right_location.column + 1),
+                    )
+                    roles = (
+                        InvolvedEntity(left_function, "changed_function", left_branch),
+                        InvolvedEntity(right_function, "changed_function", right_branch),
+                        InvolvedEntity(symbol, "shared_module_global", BranchRole.MERGE),
+                    )
+                    findings.append(_finding(
+                        rule_id=self.rule_id, title=self.title, category=self.category,
+                        severity=self.severity, confidence=Confidence.HIGH,
+                        evidence_level=EvidenceLevel.DETERMINISTIC_STATIC,
+                        summary=f"{left_function} and {right_function} independently access writable module global {symbol}.",
+                        context=context, entities=roles, locations=locations,
+                        evidence=(
+                            f"{left_function}: {', '.join(sorted(kind.value for kind in left_kinds))}",
+                            f"{right_function}: {', '.join(sorted(kind.value for kind in right_kinds))}",
+                            "At least one direct module-global access writes or updates the binding.",
+                        ),
+                        relationships=(FindingRelationship("shared_global_access", left_function, right_function, symbol),),
+                        action="Review the shared state updates and coordinate their ordering or ownership.",
+                    ))
+                    break
+        return findings

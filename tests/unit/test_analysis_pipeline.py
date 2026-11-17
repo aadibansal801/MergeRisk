@@ -211,3 +211,80 @@ def test_star_argument_call_is_unresolved_coverage_not_a_signature_finding():
     assert "MR-PY-SIG-002" not in {finding.rule_id for finding in result.findings}
     assert result.status is AnalysisStatus.PARTIAL
     assert result.coverage.dynamic_constructs_encountered > 0
+
+
+def test_new_cross_branch_global_writes_emit_structured_finding():
+    base = "counter = 0\ndef add():\n    return 1\ndef remove():\n    return 1\n"
+    left = "counter = 0\ndef add():\n    global counter\n    counter += 1\ndef remove():\n    return 1\n"
+    right = "counter = 0\ndef add():\n    return 1\ndef remove():\n    global counter\n    counter -= 1\n"
+    merged = left.replace("def remove():\n    return 1", "def remove():\n    global counter\n    counter -= 1")
+
+    result = AnalysisOrchestrator().analyze_sources(
+        {"pkg/state.py": base}, {"pkg/state.py": left}, {"pkg/state.py": right}, {"pkg/state.py": merged},
+    )
+
+    state_findings = [item for item in result.findings if item.rule_id == "MR-PY-STATE-002"]
+    assert len(state_findings) == 1
+    finding = state_findings[0]
+    assert {entity.symbol for entity in finding.entities} == {
+        "pkg.state.add", "pkg.state.remove", "pkg.state.counter",
+    }
+    assert finding.relationships[0].kind == "shared_global_access"
+    assert finding.relationships[0].condition == "pkg.state.counter"
+    assert result.status is AnalysisStatus.SUCCESS
+
+
+def test_read_only_and_preexisting_global_accesses_are_not_attributed_to_merge():
+    base = "limit = 10\ndef first():\n    return True\ndef second():\n    return False\n"
+    left = base.replace("return True", "return limit > 0")
+    right = base.replace("return False", "return limit < 20")
+    read_only = AnalysisOrchestrator().analyze_sources(
+        {"state.py": base}, {"state.py": left}, {"state.py": right},
+        {"state.py": left.replace("return False", "return limit < 20")},
+    )
+    assert "MR-PY-STATE-002" not in {item.rule_id for item in read_only.findings}
+
+    established = "counter = 0\ndef increment():\n    global counter\n    counter += 1\ndef report():\n    return counter\n"
+    left_existing = established.replace("return counter", "return counter + 1")
+    right_existing = established.replace("counter += 1", "counter += 2")
+    already_shared = AnalysisOrchestrator().analyze_sources(
+        {"state.py": established}, {"state.py": left_existing}, {"state.py": right_existing},
+        {"state.py": right_existing.replace("return counter", "return counter + 1")},
+    )
+    assert "MR-PY-STATE-002" not in {item.rule_id for item in already_shared.findings}
+
+
+def test_global_attribute_mutation_is_partial_not_a_confirmed_state_finding():
+    source = "cache = {}\ndef update():\n    cache.update({'x': 1})\n"
+    result = AnalysisOrchestrator().analyze_sources(
+        {"state.py": source}, {"state.py": source}, {"state.py": source}, {"state.py": source},
+    )
+    assert "MR-PY-STATE-002" not in {item.rule_id for item in result.findings}
+    assert result.status is AnalysisStatus.PARTIAL
+    assert result.coverage.unresolved_references > 0
+
+
+def test_same_named_globals_in_different_modules_do_not_form_an_interaction():
+    base = {
+        "one.py": "shared = 0\ndef first():\n    return 0\n",
+        "two.py": "shared = 0\ndef second():\n    return 0\n",
+    }
+    left = {**base, "one.py": "shared = 0\ndef first():\n    global shared\n    shared += 1\n"}
+    right = {**base, "two.py": "shared = 0\ndef second():\n    global shared\n    shared += 1\n"}
+    merged = {**left, "two.py": right["two.py"]}
+    result = AnalysisOrchestrator().analyze_sources(base, left, right, merged)
+    assert "MR-PY-STATE-002" not in {item.rule_id for item in result.findings}
+
+
+def test_cross_module_global_attribute_access_is_partial_not_confirmed():
+    config = "counter = 0\n"
+    client = "import config\ndef read():\n    return config.counter\n"
+    result = AnalysisOrchestrator().analyze_sources(
+        {"config.py": config, "client.py": client},
+        {"config.py": config, "client.py": client},
+        {"config.py": config, "client.py": client},
+        {"config.py": config, "client.py": client},
+    )
+    assert "MR-PY-STATE-002" not in {item.rule_id for item in result.findings}
+    assert result.status is AnalysisStatus.PARTIAL
+    assert result.coverage.unresolved_references > 0

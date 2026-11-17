@@ -1,0 +1,6 @@
+{
+  "expect_flag": false,
+  "description": "Attribute-based mutation of a module global is not confirmed by direct-name resolution.",
+  "expected_findings": [],
+  "deferred_expectations": []
+}

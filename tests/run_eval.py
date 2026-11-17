@@ -23,9 +23,10 @@ _KIND_TO_RULE_ID: dict[str, str] = {
     "duplicate_addition": "MR-PY-DUP-001",
     "call_dependency": "MR-PY-XCALL-001",
     "shared_state": "MR-PY-STATE-001",
+    "shared_global_write": "MR-PY-STATE-002",
     "same_entity_changed": "MR-PY-MOD-001",
 }
-_TIER_A_KINDS = frozenset({"syntax_error", "signature_mismatch", "deleted_dependency"})
+_TIER_A_KINDS = frozenset({"syntax_error", "signature_mismatch", "deleted_dependency", "shared_global_write"})
 
 
 def _load_expected(scenario_dir: Path) -> dict[str, Any]:
@@ -225,7 +226,7 @@ def main() -> None:
     ]
     tier_a_evaluations.extend(_run_scenario(directory) for directory in syntax_directories)
 
-    print("TIER A RULE BENCHMARK (syntax errors, deleted symbols, signature mismatches, and clean controls)")
+    print("SUPPORTED RULE BENCHMARK (syntax, deleted symbols, signatures, shared globals, and clean controls)")
     for evaluation in tier_a_evaluations:
         _print_scenario(evaluation)
         spec = next((specs[d] for d in tier_a_directories if d.name == evaluation.scenario_id), None)

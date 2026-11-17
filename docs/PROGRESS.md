@@ -15,10 +15,17 @@
 ## Gates
 
 - Phase 0: passed
-- Phase 1: pending
+- Phase 1: passed
 - Phase 2: pending
 - Phase 3: pending
 - Phase 4: pending
 - Phase 5: pending
 
 - Test environment note: elevated pytest could not access the host shared temp directory; the dedicated project .test-runs parent must exist. Tests run normally in the sandbox with a unique --basetemp.
+
+## Phase 1 — passed
+
+- Added compiler-scope-backed Python adapter, historical import evidence, conservative structural rename/near-miss/duplicate diagnostics. Dynamic, optional imports, annotations and comprehensions explicitly reduce coverage.
+- Preserved initial shared-global changes and evaluator identity regressions.
+- `python -m pytest -q -p no:cacheprovider --basetemp=.test-runs/phase1`: 122 passed + 32 subtests. New real-Git headline and lexical tests: 12 passed. Evaluator unchanged supported precision/recall 1.00 (build-phase1.txt).
+- Next: exact-byte repair plans and static verifier.

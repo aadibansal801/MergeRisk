@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 
 from mergerisk.domain.findings import CanonicalFinding, FindingRelationship, SourceLocation
@@ -72,9 +73,9 @@ class ExpectedFinding:
             raise ValueError("expected finding requires an ExpectedRelationship")
         if any(not isinstance(entity, ExpectedEntity) for entity in self.entities):
             raise ValueError("entities must contain ExpectedEntity values with roles")
-        symbols = [entity.symbol for entity in self.entities]
-        if len(set(symbols)) != len(symbols):
-            raise ValueError("expected finding cannot contain duplicate symbols")
+        entity_roles = [(entity.symbol, entity.role) for entity in self.entities]
+        if len(set(entity_roles)) != len(entity_roles):
+            raise ValueError("expected finding cannot contain duplicate entity-role pairs")
         if self.location is not None and not isinstance(self.location, SourceLocation):
             raise TypeError("expected finding location must be a SourceLocation or None")
 
@@ -85,7 +86,7 @@ class ExpectedFinding:
 
     @property
     def entity_roles(self) -> dict[str, str]:
-        """Compatibility view of required entity roles."""
+        """Compatibility projection; use entities when a symbol has multiple roles."""
         return {entity.symbol: entity.role for entity in self.entities}
 
     @property
@@ -105,8 +106,9 @@ class FindingMatcher:
     def matches(self, expected: ExpectedFinding, actual: CanonicalFinding) -> bool:
         if expected.rule_id != actual.rule_id:
             return False
-        actual_roles = {entity.symbol: entity.role for entity in actual.entities}
-        if actual_roles != expected.entity_roles:
+        expected_roles = Counter((entity.symbol, entity.role) for entity in expected.entities)
+        actual_roles = Counter((entity.symbol, entity.role) for entity in actual.entities)
+        if actual_roles != expected_roles:
             return False
         if expected.relationship.to_finding_relationship() not in actual.relationships:
             return False

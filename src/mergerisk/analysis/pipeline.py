@@ -14,9 +14,11 @@ from mergerisk.domain.revisions import BranchRole, RevisionContext
 from mergerisk.git.scenario import GitScenario
 from mergerisk.git.snapshot import GitSnapshotReader
 from mergerisk.rules.tier_a import (
-    DeletedSymbolRule, SignatureMismatchRule, SyntaxErrorRule, TierAContext,
+    DeletedSymbolRule, SharedGlobalWriteRule, SignatureMismatchRule, SyntaxErrorRule, TierAContext,
 )
 from mergerisk.semantic.call_graph import CallGraphBuilder
+from mergerisk.semantic.global_state import GlobalStateResolver
+from mergerisk.rules.mechanical import mechanical_issues
 
 
 @dataclass(frozen=True)
@@ -82,6 +84,13 @@ class AnalysisOrchestrator:
                     all_candidate[path] = content
         valid_candidate = sources["merge"]
         calls = CallGraphBuilder().build_from_sources(valid_candidate)
+        resolver = GlobalStateResolver()
+        global_analyses = {
+            "base": resolver.analyze(sources["base"]),
+            "left": resolver.analyze(sources["left"]),
+            "right": resolver.analyze(sources["right"]),
+            "merge": resolver.analyze(valid_candidate),
+        }
         rule_context = TierAContext(
             candidate_sources=all_candidate,
             attributed_edits=edits,
@@ -90,21 +99,26 @@ class AnalysisOrchestrator:
             base_sources=raw_sources["base"],
             left_sources=raw_sources["left"],
             right_sources=raw_sources["right"],
+            global_analyses=global_analyses,
         )
-        rules = (SyntaxErrorRule(), DeletedSymbolRule(), SignatureMismatchRule())
+        rules = (SyntaxErrorRule(), DeletedSymbolRule(), SignatureMismatchRule(), SharedGlobalWriteRule())
         findings = [finding for rule in rules for finding in rule.evaluate(rule_context)]
+        mechanical, mechanical_notes = mechanical_issues(rule_context)
+        findings.extend(issue.finding for issue in mechanical)
         findings.sort(key=lambda item: (item.rule_id, item.finding_id))
         unsupported = sum(item.status == "unsupported" for item in classifications["merge"])
         skipped = sum(item.status == "skipped" for item in classifications["merge"])
-        unresolved = sum(call.status.value in {"unresolved", "ambiguous"} for call in calls)
+        unresolved = (sum(call.status.value in {"unresolved", "ambiguous"} for call in calls)
+                      + global_analyses["merge"].unresolved_count)
         dynamic = sum(
             call.status.value == "ambiguous" or call.has_star_args or call.has_star_kwargs
             for call in calls
         )
         notes = [
             f"{len(edits)} branch-attributed entity edits; {len(calls)} statically indexed call sites.",
-            "Supported scope: tracked Python files, local function/method calls, syntax, deleted symbols, and call/signature compatibility.",
+            "Supported scope: tracked Python files, local calls, syntax, deleted symbols, signature compatibility, and direct module-global interactions.",
         ]
+        notes.extend(mechanical_notes)
         if unsupported:
             notes.append(f"{unsupported} candidate Python file(s) were unsupported due to parse or binary content.")
         branch_unsupported = sum(
@@ -116,10 +130,10 @@ class AnalysisOrchestrator:
         if branch_unsupported:
             notes.append(f"{branch_unsupported} base or branch file snapshot(s) were unsupported and excluded from attribution.")
         if unresolved:
-            notes.append(f"{unresolved} call reference(s) are unresolved or ambiguous.")
+            notes.append(f"{unresolved} call or global-state reference(s) are unresolved or ambiguous.")
         if dynamic:
             notes.append(f"{dynamic} call site(s) use dynamic or star-argument binding that Tier A cannot validate fully.")
-        status = AnalysisStatus.PARTIAL if unsupported or branch_unsupported or unresolved or dynamic else AnalysisStatus.SUCCESS
+        status = AnalysisStatus.PARTIAL if unsupported or branch_unsupported or unresolved or dynamic or mechanical_notes else AnalysisStatus.SUCCESS
         return AnalysisResult(
             status, findings,
             CoverageSummary(len(valid_candidate), skipped, unsupported, unresolved, dynamic),
@@ -155,18 +169,30 @@ class AnalysisOrchestrator:
             except SyntaxError as error:
                 parse_errors.append((path, error))
         calls = CallGraphBuilder().build_from_sources(valid)
-        tier = TierAContext(candidate_sources, edits, calls, context, base_sources, left_sources, right_sources)
-        rules = (SyntaxErrorRule(), DeletedSymbolRule(), SignatureMismatchRule())
+        resolver = GlobalStateResolver()
+        global_analyses = {
+            "base": resolver.analyze(base_sources),
+            "left": resolver.analyze(left_sources),
+            "right": resolver.analyze(right_sources),
+            "merge": resolver.analyze(valid),
+        }
+        tier = TierAContext(candidate_sources, edits, calls, context, base_sources, left_sources, right_sources,
+                            global_analyses)
+        rules = (SyntaxErrorRule(), DeletedSymbolRule(), SignatureMismatchRule(), SharedGlobalWriteRule())
         findings = sorted((finding for rule in rules for finding in rule.evaluate(tier)), key=lambda f: (f.rule_id, f.finding_id))
+        mechanical, mechanical_notes = mechanical_issues(tier)
+        findings = sorted(findings + [issue.finding for issue in mechanical], key=lambda f: (f.rule_id, f.finding_id))
         # Syntax issues already have canonical findings. Report malformed files as unsupported coverage.
         notes = ["Analysis used the canonical Tier A Python pipeline."]
+        notes.extend(mechanical_notes)
         if parse_errors:
             notes.extend(f"Unsupported parse construct at {path}:{error.lineno}: {error.msg}" for path, error in parse_errors)
         if parent_parse_errors:
             notes.extend(f"Unsupported {role} snapshot at {path}:{error.lineno}: {error.msg}" for role, path, error in parent_parse_errors)
-        unresolved = sum(call.status.value in {"unresolved", "ambiguous"} for call in calls)
+        unresolved = (sum(call.status.value in {"unresolved", "ambiguous"} for call in calls)
+                      + global_analyses["merge"].unresolved_count)
         if unresolved:
-            notes.append(f"{unresolved} call site(s) remain unresolved or ambiguous.")
+            notes.append(f"{unresolved} call or global-state reference(s) remain unresolved or ambiguous.")
         dynamic = sum(
             call.status.value == "ambiguous" or call.has_star_args or call.has_star_kwargs
             for call in calls
@@ -174,7 +200,7 @@ class AnalysisOrchestrator:
         if dynamic:
             notes.append(f"{dynamic} call site(s) require dynamic or star-argument binding support.")
         return AnalysisResult(
-            AnalysisStatus.PARTIAL if parse_errors or parent_parse_errors or unresolved or dynamic else AnalysisStatus.SUCCESS,
+            AnalysisStatus.PARTIAL if parse_errors or parent_parse_errors or unresolved or dynamic or mechanical_notes else AnalysisStatus.SUCCESS,
             findings,
             CoverageSummary(len(valid), 0, len(parse_errors) + len(parent_parse_errors), unresolved,
                             sum(call.status.value == "ambiguous" or call.has_star_args or call.has_star_kwargs for call in calls)),

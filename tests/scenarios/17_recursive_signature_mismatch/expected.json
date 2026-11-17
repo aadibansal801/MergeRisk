@@ -1,0 +1,20 @@
+{
+  "expect_flag": true,
+  "description": "A required signature parameter introduced on one branch breaks a recursive call in the same function changed by the other branch.",
+  "expected_findings": [
+    {
+      "rule_id": "MR-PY-SIG-002",
+      "entities": [
+        {"symbol": "merged.recur", "role": "changed_signature"},
+        {"symbol": "merged.recur", "role": "affected_call_site"}
+      ],
+      "relationship": {
+        "kind": "call",
+        "source": "merged.recur",
+        "target": "merged.recur",
+        "condition": "call omits required argument(s): offset"
+      }
+    }
+  ],
+  "deferred_expectations": []
+}
