@@ -7,6 +7,7 @@ import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from .plumbing import environment as git_environment, run_git
 
 
 _TIMEOUT_SECONDS = 30
@@ -67,17 +68,10 @@ class GitScenarioAssembler:
     ) -> subprocess.CompletedProcess[str]:
         """Run a bounded Git command and retain stderr for useful diagnostics."""
         try:
-            result = subprocess.run(
-                ["git", *(part for setting in (config_overrides or []) for part in ("-c", setting)),
-                 "-C", str(self.repo_path), *arguments],
-                check=False,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="surrogateescape",
-                timeout=_TIMEOUT_SECONDS,
-                env=environment,
-            )
+            raw = run_git(self.repo_path, arguments, check=False, env=environment, config=config_overrides or ())
+            result = subprocess.CompletedProcess(raw.args, raw.returncode,
+                                                 raw.stdout.decode("utf-8", "surrogateescape"),
+                                                 raw.stderr.decode("utf-8", "surrogateescape"))
         except subprocess.TimeoutExpired as error:
             raise GitCommandError(
                 f"Git command timed out after {_TIMEOUT_SECONDS}s: {arguments!r}"
@@ -149,7 +143,7 @@ class GitScenarioAssembler:
 
     def _safe_merge_environment(self) -> tuple[dict[str, str], list[str]]:
         """Prevent configured external merge drivers from executing during analysis."""
-        environment = os.environ.copy()
+        environment = git_environment()
         for key in tuple(environment):
             if key in {"GIT_CONFIG", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"}:
                 environment.pop(key, None)

@@ -17,7 +17,7 @@
 - Phase 0: passed
 - Phase 1: passed
 - Phase 2: passed
-- Phase 3: pending
+- Phase 3: passed
 - Phase 4: pending
 - Phase 5: pending
 
@@ -37,3 +37,11 @@
 - `python -m pytest -q -p no:cacheprovider --basetemp=.test-runs/phase2`: 135 passed + 32 subtests. Includes BOM/CRLF/coding cookie, stale/overlap, refusal, acceptance and positional-only binding regression.
 - `python scripts/evaluate_repairs.py`: eight authored cases; correct-fix 4/4, false-fix 0/8, correct refusal/no-change 4/4. Strict rule/entity precision and recall 1.00 on represented rules. Six original analyses partial. reports/evaluation/repairs.json.
 - Next: installed CLI preview, immutable commit and explicit guarded apply.
+
+## Phase 3 — passed
+
+- Shared MergeService reads immutable blobs in batches, previews exact repairs, re-verifies candidate identity before commit-tree, creates unique refs/mergerisk refs, and performs an explicit checked Git fast-forward. No checkout/index/ref changes during preview; commit creation preserves checkout.
+- Installed analyze/merge/explain/doctor/dashboard/version commands, python -m mergerisk and legacy cli.py wrapper. Bounded Git subprocesses and sanitized environment. Optional restricted Docker runner with immutable local image IDs; no host test fallback.
+- Full suite: 144 passed + 32 subtests (phase3). Additional safety checks: 9 passed. Doctor/version/explain succeeded. Docker executable exists, actual container verification not yet exercised.
+- Demo evidence reports/demo.json: repaired commit b80d73726fc0ab0138f3eb8858ffdc828a0ca8a5; parents a4ce320df538309ab46e67a3156928e247c2bc3f and 15f284f440d05ed7f40fe44501e352b89ce02b14; tree a86996132470d865452abcab7befb130c1d578f0. Exact repaired bytes and known-safe sample app verified; unsafe required-argument commit refused. Retained repositories in .test-runs/release-demo.
+- Next: real dashboard, authenticated local API, bounded jobs, history and UI/security tests.
