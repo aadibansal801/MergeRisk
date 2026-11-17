@@ -16,7 +16,7 @@
 
 - Phase 0: passed
 - Phase 1: passed
-- Phase 2: pending
+- Phase 2: passed
 - Phase 3: pending
 - Phase 4: pending
 - Phase 5: pending
@@ -29,3 +29,11 @@
 - Preserved initial shared-global changes and evaluator identity regressions.
 - `python -m pytest -q -p no:cacheprovider --basetemp=.test-runs/phase1`: 122 passed + 32 subtests. New real-Git headline and lexical tests: 12 passed. Evaluator unchanged supported precision/recall 1.00 (build-phase1.txt).
 - Next: exact-byte repair plans and static verifier.
+
+## Phase 2 — passed
+
+- Exact span/byte patches with source/tree hashes, overlap rejection, per-candidate atomicity, AST import whitelist, syntax/name/signature/cycle regression checks and idempotency. No ast.unparse rewrites.
+- AUTO restores one historical unconditional module import with preserved prologue order. Local/conditional/multi-binding imports and required argument values are refused. Rename suggestions require explicit acceptance.
+- `python -m pytest -q -p no:cacheprovider --basetemp=.test-runs/phase2`: 135 passed + 32 subtests. Includes BOM/CRLF/coding cookie, stale/overlap, refusal, acceptance and positional-only binding regression.
+- `python scripts/evaluate_repairs.py`: eight authored cases; correct-fix 4/4, false-fix 0/8, correct refusal/no-change 4/4. Strict rule/entity precision and recall 1.00 on represented rules. Six original analyses partial. reports/evaluation/repairs.json.
+- Next: installed CLI preview, immutable commit and explicit guarded apply.

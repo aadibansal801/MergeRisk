@@ -1,0 +1,9 @@
+{
+  "auto": false,
+  "findings": [
+    {
+      "rule_id": "MR-PY-RENAME-001",
+      "symbol": "app.py:old_name"
+    }
+  ]
+}

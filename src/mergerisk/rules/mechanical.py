@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from mergerisk.domain.findings import CanonicalFinding, Confidence, EvidenceLevel, InvolvedEntity, Severity, SourceLocation
 from mergerisk.domain.revisions import BranchRole
 from mergerisk.semantic.python_adapter import ImportSite, PythonModel, Reference, inspect_python, unique_near_miss
+from mergerisk.semantic.imports import ImportResolver
 from mergerisk.rules.tier_a import TierAContext, _finding
 
 
@@ -120,7 +121,46 @@ def mechanical_issues(context: TierAContext) -> tuple[list[MechanicalIssue], lis
                                 "The merge contains duplicate declarations. Redefinitions, decorators and import hooks can change behavior; review execution order before deleting anything.",
                                 getattr(nodes[-1], "name", ast.get_source_segment(merged.source, nodes[-1]) or "import"), "left", "right", "<module>")
                 issues.append(MechanicalIssue(finding, path))
+    # Resolve project imports against all four versions; a stale import can fail before any call executes.
+    modules = {role: {ImportResolver.module_name(p): m for p, m in files.items()} for role, files in models.items()}
+    resolver = ImportResolver(set(context.base_sources) | set(context.candidate_sources))
+    for path, merged in models["merge"].items():
+        for site in merged.imports:
+            node = site.node
+            if site.scope != "<module>" or site.conditional or len(node.names) != 1 or merged.limitations:
+                continue
+            if isinstance(node, ast.ImportFrom):
+                module = resolver._absolute_from_module(path, node.module or "", node.level)
+                symbol = node.names[0].name
+            else:
+                module, symbol = node.names[0].name, None
+            def exists(role):
+                target = modules[role].get(module)
+                return bool(target and (symbol is None or symbol in target.bound))
+            if not exists("base") or exists("merge"):
+                continue
+            for removing, using in (("left", "right"), ("right", "left")):
+                user = models[using].get(path)
+                remover = models[removing].get(path)
+                if (exists(removing) or not exists(using) or not user
+                        or not any(i.identity == site.identity for i in user.imports)
+                        or remover and any(i.identity == site.identity for i in remover.imports)):
+                    continue
+                finding = _make(context, path, node, "MR-PY-IMPORT-001", "A project import points to a removed export",
+                                f"{removing} removed '{module}{'.' + symbol if symbol else ''}', while {using} retained an import that resolved on its own branch. The combined project cannot satisfy that import.",
+                                site.name, removing, using, site.scope)
+                issues.append(MechanicalIssue(finding, path))
+                break
     return issues, sorted(set(notes))
+
+
+def combine_findings(findings, issues):
+    # Prefer the specific mechanical evidence over a second deletion alert for the same reference.
+    specific = {(i.path, i.reference.name) for i in issues if i.reference and i.finding.rule_id == "MR-PY-RENAME-001"}
+    findings = [f for f in findings if not (f.rule_id == "MR-PY-DEL-001" and
+                any((location.path, entity.symbol.rsplit(".", 1)[-1]) in specific
+                    for location in f.locations for entity in f.entities if entity.role == "deleted_definition"))]
+    return sorted(findings + [i.finding for i in issues], key=lambda f: (f.rule_id, f.finding_id))
 
 
 def _definition_shape(node) -> str:

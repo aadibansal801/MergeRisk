@@ -18,7 +18,7 @@ from mergerisk.rules.tier_a import (
 )
 from mergerisk.semantic.call_graph import CallGraphBuilder
 from mergerisk.semantic.global_state import GlobalStateResolver
-from mergerisk.rules.mechanical import mechanical_issues
+from mergerisk.rules.mechanical import combine_findings, mechanical_issues
 
 
 @dataclass(frozen=True)
@@ -104,7 +104,7 @@ class AnalysisOrchestrator:
         rules = (SyntaxErrorRule(), DeletedSymbolRule(), SignatureMismatchRule(), SharedGlobalWriteRule())
         findings = [finding for rule in rules for finding in rule.evaluate(rule_context)]
         mechanical, mechanical_notes = mechanical_issues(rule_context)
-        findings.extend(issue.finding for issue in mechanical)
+        findings = combine_findings(findings, mechanical)
         findings.sort(key=lambda item: (item.rule_id, item.finding_id))
         unsupported = sum(item.status == "unsupported" for item in classifications["merge"])
         skipped = sum(item.status == "skipped" for item in classifications["merge"])
@@ -181,7 +181,7 @@ class AnalysisOrchestrator:
         rules = (SyntaxErrorRule(), DeletedSymbolRule(), SignatureMismatchRule(), SharedGlobalWriteRule())
         findings = sorted((finding for rule in rules for finding in rule.evaluate(tier)), key=lambda f: (f.rule_id, f.finding_id))
         mechanical, mechanical_notes = mechanical_issues(tier)
-        findings = sorted(findings + [issue.finding for issue in mechanical], key=lambda f: (f.rule_id, f.finding_id))
+        findings = combine_findings(findings, mechanical)
         # Syntax issues already have canonical findings. Report malformed files as unsupported coverage.
         notes = ["Analysis used the canonical Tier A Python pipeline."]
         notes.extend(mechanical_notes)

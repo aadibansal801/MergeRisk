@@ -1,0 +1,96 @@
+{
+  "cases": [
+    {
+      "case": "alias",
+      "changed": true,
+      "correct": true,
+      "expects_auto": true,
+      "status": "partial",
+      "validation": "static_verified"
+    },
+    {
+      "case": "bom_crlf",
+      "changed": true,
+      "correct": true,
+      "expects_auto": true,
+      "status": "partial",
+      "validation": "static_verified"
+    },
+    {
+      "case": "clean",
+      "changed": false,
+      "correct": true,
+      "expects_auto": false,
+      "status": "success",
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "dynamic_refusal",
+      "changed": false,
+      "correct": true,
+      "expects_auto": false,
+      "status": "partial",
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "encoding_cookie",
+      "changed": true,
+      "correct": true,
+      "expects_auto": true,
+      "status": "partial",
+      "validation": "static_verified"
+    },
+    {
+      "case": "json",
+      "changed": true,
+      "correct": true,
+      "expects_auto": true,
+      "status": "partial",
+      "validation": "static_verified"
+    },
+    {
+      "case": "rename_review",
+      "changed": false,
+      "correct": true,
+      "expects_auto": false,
+      "status": "partial",
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "required_argument",
+      "changed": false,
+      "correct": true,
+      "expects_auto": false,
+      "status": "success",
+      "validation": "validation_unavailable"
+    }
+  ],
+  "correct_fix_rate": 1.0,
+  "correct_refusal_rate": 1.0,
+  "false_fix_rate": 0.0,
+  "partial_analyses": 6,
+  "rules": {
+    "MR-PY-IMPORT-001": {
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 4
+    },
+    "MR-PY-RENAME-001": {
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 1
+    },
+    "MR-PY-SIG-002": {
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 1
+    }
+  },
+  "scope": "Small authored Python corpus; no universal correctness guarantee."
+}

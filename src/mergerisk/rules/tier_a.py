@@ -285,10 +285,10 @@ def _binding_error(node: ast.Call, signature: _Signature) -> str | None:
     if unexpected and not signature.has_kwargs:
         return f"call supplies unexpected keyword argument(s): {', '.join(unexpected)}"
     bound = set(positional_names[:supplied_positional])
-    duplicate = sorted(bound & supplied_keywords)
+    duplicate = sorted(bound & supplied_keywords & allowed_keywords)
     if duplicate:
         return f"call supplies multiple values for argument(s): {', '.join(duplicate)}"
-    bound.update(supplied_keywords)
+    bound.update(supplied_keywords & allowed_keywords)
     missing_positional = [name for name in signature.required_positional if name not in bound]
     if missing_positional:
         return f"call omits required argument(s): {', '.join(missing_positional)}"

@@ -1,0 +1,9 @@
+{
+  "auto": false,
+  "findings": [
+    {
+      "rule_id": "MR-PY-SIG-002",
+      "symbol": "app.fetch"
+    }
+  ]
+}
