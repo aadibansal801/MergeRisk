@@ -18,11 +18,11 @@ class RuntimeConfig:
     timeout: int = 30
 
     def __post_init__(self):
-        if not re.fullmatch(r"sha256:[0-9a-f]{64}", self.image):
+        if not isinstance(self.image, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", self.image):
             raise ValueError("Runtime image must be a locally available immutable sha256 image ID")
-        if not self.command or len(self.command) > 32 or any(not isinstance(a, str) or "\0" in a or len(a) > 1024 for a in self.command):
+        if not isinstance(self.command, (tuple, list)) or not self.command or len(self.command) > 32 or any(not isinstance(a, str) or "\0" in a or len(a) > 1024 for a in self.command):
             raise ValueError("Runtime command must be a nonempty argument array (at most 32 arguments)")
-        if not 1 <= self.timeout <= 120:
+        if type(self.timeout) is not int or not 1 <= self.timeout <= 120:
             raise ValueError("Runtime timeout must be 1–120 seconds")
 
 

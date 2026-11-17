@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}Repositories{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">A CLEARER PATH TO MERGE</p><h1>Your repositories</h1><p class="lede">Catch the breaks that a clean Git merge can leave behind.</p></div><a class="button primary" href="/new">New merge <span aria-hidden="true">↗</span></a></div>
+<div class="stats">
+  <div class="stat"><span>Registered repositories</span><strong>{{ repositories|length }}</strong><small>Explicitly selected local projects</small></div>
+  <div class="stat"><span>Saved analyses</span><strong>{{ runs|length }}</strong><small>Immutable revisions, revisitable results</small></div>
+  <div class="stat"><span>In progress</span><strong>{{ runs|selectattr('state','in',['running','queued','cancelling','validating'])|list|length }}</strong><small>One worker · bounded queue</small></div>
+</div>
+<section class="card"><div class="section-heading"><div><h2>Connected to your computer</h2><p>Analysis reads Git objects without checking out either branch.</p></div><span class="badge neutral">LOCAL REPOSITORIES</span></div>
+{% if repositories %}<div class="repo-grid">{% for repo in repositories %}
+<article class="repo-card"><div class="repo-icon" aria-hidden="true">⑂</div><h3>{{ repo.name }}</h3><p class="path">{{ repo.path }}</p><span class="badge success">Registered</span><a class="button secondary full" href="/new?repo={{ repo.id }}">Compare branches →</a></article>
+{% endfor %}</div>{% else %}<div class="empty"><span class="empty-icon" aria-hidden="true">⑂</span><h3>Start with a local repository</h3><p>Add a project that already has Git history. Your files and branches stay where they are.</p></div>{% endif %}
+<form data-action="repository" class="inline-form"><div class="grow"><label for="repo-path">Repository root</label><input id="repo-path" name="path" placeholder="C:\Projects\my-app or /home/me/my-app" required autocomplete="off"><small>Use the full, canonical path to an existing Git repository.</small></div><button class="button primary" type="submit">Add repository</button></form>
+</section>
+<section class="callout"><div class="callout-mark" aria-hidden="true">✓</div><div><h2>A clean merge is a starting point.</h2><p>Compare the base, both branches and Git’s candidate. Review exact repairs, then choose when to create a commit.</p><a href="/learn">Understand what MergeRisk can verify →</a></div></section>
+{% endblock %}

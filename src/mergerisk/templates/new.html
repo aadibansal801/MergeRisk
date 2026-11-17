@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}New merge{% endblock %}{% block breadcrumb %}New merge{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">COMPARE BEFORE YOU COMBINE</p><h1>Prepare a merge</h1><p class="lede">Choose where changes should land, and where they come from.</p></div></div>
+<ol class="steps"><li class="active">01 <span>Select branches</span></li><li>02 <span>Understand findings</span></li><li>03 <span>Review &amp; merge</span></li></ol>
+<div class="two-column"><section class="card">
+<h2>The merge scenario</h2>
+{% if repositories %}
+<form data-action="analyze">
+<label for="repository">Repository</label><select id="repository" name="repo_id" required data-repository-selector>{% for repo in repositories %}<option value="{{ repo.id }}" {% if selected_repo == repo.id %}selected{% endif %}>{{ repo.name }} — {{ repo.path }}</option>{% endfor %}</select>
+<p id="repo-health" class="muted" role="status">Loading branches…</p>
+<div class="branch-pair"><div><label for="left">Target branch <span class="badge neutral">LEFT</span></label><select name="left" id="left" required disabled><option>Loading…</option></select><small>The branch you plan to update.</small></div><span class="merge-arrow" aria-hidden="true">←</span><div><label for="right">Source branch <span class="badge neutral">RIGHT</span></label><select name="right" id="right" required disabled><option>Loading…</option></select><small>The changes you want to bring in.</small></div></div>
+<div class="notice info"><strong>Preview first.</strong> Analysis and automatic repairs stay in an isolated candidate. Your index, worktree and branch references are untouched.</div>
+<button class="button primary full" type="submit" id="analyze-button" disabled>Analyze candidate merge →</button>
+</form>
+{% else %}<div class="empty"><h3>Add a repository first</h3><p>MergeRisk only accesses projects you explicitly register.</p><a class="button primary" href="/">Register a repository</a></div>{% endif %}
+</section><aside class="card subtle"><p class="eyebrow">WHAT HAPPENS NEXT</p><h2>Four versions.<br>One clear picture.</h2><ul class="explanation-list"><li><strong>B · Base</strong><span>The common starting point.</span></li><li><strong>L / R · Branches</strong><span>What each side changed and which side needs a symbol.</span></li><li><strong>M · Git candidate</strong><span>The actual combined tree, with textual conflicts reported first.</span></li><li><strong>Fixed candidate</strong><span>Minimal eligible edits with honest static validation.</span></li></ul><p class="muted">Dynamic behavior is reported as partial coverage. Project code never runs during default analysis.</p></aside></div>
+{% endblock %}

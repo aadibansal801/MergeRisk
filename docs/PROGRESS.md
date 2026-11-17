@@ -18,7 +18,7 @@
 - Phase 1: passed
 - Phase 2: passed
 - Phase 3: passed
-- Phase 4: pending
+- Phase 4: passed
 - Phase 5: pending
 
 - Test environment note: elevated pytest could not access the host shared temp directory; the dedicated project .test-runs parent must exist. Tests run normally in the sandbox with a unique --basetemp.
@@ -45,3 +45,13 @@
 - Full suite: 144 passed + 32 subtests (phase3). Additional safety checks: 9 passed. Doctor/version/explain succeeded. Docker executable exists, actual container verification not yet exercised.
 - Demo evidence reports/demo.json: repaired commit b80d73726fc0ab0138f3eb8858ffdc828a0ca8a5; parents a4ce320df538309ab46e67a3156928e247c2bc3f and 15f284f440d05ed7f40fe44501e352b89ce02b14; tree a86996132470d865452abcab7befb130c1d578f0. Exact repaired bytes and known-safe sample app verified; unsafe required-argument commit refused. Retained repositories in .test-runs/release-demo.
 - Next: real dashboard, authenticated local API, bounded jobs, history and UI/security tests.
+
+## Phase 4 — passed
+
+- Packaged FastAPI/Jinja/CSS/JS dashboard with real repositories/branches, asynchronous progress/cancellation, results/filtering, B/L/R/M/fixed comparison, fix review, explicit commit/apply, exports, persisted history, rule learning and validated runner settings.
+- Loopback bind, local HTTP-only SameSite session, CSRF, Origin/Host checks, CSP/escaping, strict input/body limits, repository allowlist and symlink/junction checks. SQLite bounded history; one worker and four total active/queued analyses.
+- Full installed suite: 160 passed + 32 subtests. Final dashboard regressions: 7 passed. One upstream Starlette/httpx deprecation warning; no test failures.
+- Windows sandbox blocked asyncio socketpair before HTTP execution. Reran with permitted loopback access and unique project --basetemp; real routes and repositories passed.
+- Browser automation completed the full registration-to-apply flow: e214bc385ddfa9d4f31f29158afc2ad11b9f3b0a, tree a86996132470d865452abcab7befb130c1d578f0. Desktop and 390x844 layouts inspected, screenshots and reports/browser-smoke.json saved.
+- Docker executable exists but Docker Desktop Linux daemon is unavailable (named pipe missing); configured project runtime execution remains unverified and reports validation_unavailable.
+- Next: optimize the measured snapshot bottleneck, release docs/build, fresh-wheel install and final regression/evaluation.

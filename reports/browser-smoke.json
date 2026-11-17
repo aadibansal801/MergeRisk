@@ -1,0 +1,36 @@
+{
+  "flow": [
+    "Registered a real local sample repository",
+    "Selected target and source in browser",
+    "Started and observed background analysis",
+    "Observed MR-PY-IMPORT-001 and exact AUTO diff",
+    "Selected fixed candidate source",
+    "Created immutable merge commit",
+    "Observed checkout unchanged message",
+    "Confirmed and applied checked fast-forward",
+    "Observed applied success message"
+  ],
+  "artifact": {
+    "commit": "e214bc385ddfa9d4f31f29158afc2ad11b9f3b0a",
+    "tree": "a86996132470d865452abcab7befb130c1d578f0",
+    "parents": [
+      "c8aacebba4075bc98d0968a349a106a83d0842b2",
+      "902d188f912a4a188dce4d5264e3fd556ebb199b"
+    ],
+    "ref": "refs/mergerisk/d471bdf3e8f04892acaece9f3fe902f4",
+    "next_steps": [
+      "git show refs/mergerisk/d471bdf3e8f04892acaece9f3fe902f4",
+      "git merge --ff-only refs/mergerisk/d471bdf3e8f04892acaece9f3fe902f4"
+    ],
+    "applied": true
+  },
+  "validation": "static_verified",
+  "viewports": [
+    "default desktop",
+    "390x844 mobile"
+  ],
+  "screenshots": [
+    "dashboard-desktop.jpg",
+    "dashboard-mobile.jpg"
+  ]
+}

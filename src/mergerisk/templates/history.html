@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}History{% endblock %}{% block breadcrumb %}History{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">EVERY ANALYSIS HAS A RECORD</p><h1>Merge history</h1><p class="lede">Revisit the evidence, revisions, repair decisions and Git artifacts.</p></div><a class="button primary" href="/new">New analysis →</a></div>
+<section class="card">{% if runs %}<div class="history-list">{% for run in runs %}<a class="history-row" href="/runs/{{ run.id }}"><span class="repo-icon" aria-hidden="true">⑂</span><div class="grow"><h3>{{ run.name or 'Repository' }}</h3><p>{{ run.created[:19]|replace('T',' ') }} UTC · {{ run.progress }}</p></div><span class="badge {{ 'success' if run.state == 'complete' else 'warning' }}">{{ run.state }}</span><span aria-hidden="true">→</span></a>{% endfor %}</div>{% else %}<div class="empty"><h2>Your first analysis will appear here</h2><p>History is stored locally in SQLite and survives dashboard restarts.</p><a href="/new" class="button primary">Compare branches</a></div>{% endif %}</section>
+{% endblock %}
