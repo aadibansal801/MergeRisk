@@ -1,0 +1,10 @@
+include README.md CHANGELOG.md AGENTS.md MERGERISK_BUILD_SPEC.md MERGERISK_V2_DESIGN.md requirements-tested.txt
+include cli.py .gitattributes .gitignore .github/workflows/ci.yml
+recursive-include docs *.md
+recursive-include scripts *.py
+recursive-include tests *.py *.json
+recursive-include src/mergerisk/templates *.html
+recursive-include src/mergerisk/static *.css *.js
+recursive-include reports *.json *.txt *.jpg
+exclude MergeRisk_report_remade.docx
+prune .test-runs

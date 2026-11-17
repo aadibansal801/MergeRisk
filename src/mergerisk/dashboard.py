@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 import json
+import os
 from pathlib import Path
 import secrets
 import threading
@@ -315,5 +316,20 @@ def create_app(state_dir: Path | None = None, *, capacity=4):
 
 def serve(port=8765, state_dir=None):
     import uvicorn
-    print(f"MergeRisk dashboard: http://127.0.0.1:{port}")
-    uvicorn.run(create_app(state_dir), host="127.0.0.1", port=port, proxy_headers=False, server_header=False)
+    directory = (state_dir or Path.home() / ".mergerisk").resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / "instance.lock").open("a+b") as lock:
+        lock.write(b"\0")
+        lock.flush()
+        lock.seek(0)
+        try:
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            raise ValueError("Another dashboard is already using this state directory") from error
+        print(f"MergeRisk dashboard: http://127.0.0.1:{port}")
+        uvicorn.run(create_app(directory), host="127.0.0.1", port=port, proxy_headers=False, server_header=False)

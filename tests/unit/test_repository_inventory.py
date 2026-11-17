@@ -17,6 +17,9 @@ class FakeSnapshotReader(GitSnapshotReader):
     def list_files_at(self, revision: str) -> list[str]:
         return sorted(self.files)
 
+    def prefetch(self, revision: str, paths: list[str]) -> None:
+        pass
+
     def read_blob_at(self, revision: str, file_path: str) -> str | None:
         return self.files.get(file_path)
 

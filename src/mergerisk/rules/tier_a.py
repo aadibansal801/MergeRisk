@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from mergerisk.analysis.changes import AttributedEdit, ChangeOp, EntityKind
@@ -21,6 +22,7 @@ from mergerisk.domain.findings import (
 from mergerisk.domain.revisions import BranchRole, RevisionContext
 from mergerisk.semantic.call_graph import CallGraphBuilder, CallSite, ResolutionStatus
 from mergerisk.semantic.imports import ImportResolver
+from mergerisk.semantic.python_adapter import parse_python
 from mergerisk.semantic.global_state import GlobalAccess, GlobalAccessKind, GlobalStateAnalysis, GlobalStateResolver
 
 from .base import BaseRule
@@ -60,9 +62,10 @@ def _finding(
     )
 
 
+@lru_cache(maxsize=256)
 def _function_nodes(source: str, path: str) -> dict[str, ast.FunctionDef | ast.AsyncFunctionDef]:
     """Index function nodes by module-qualified name, including class methods."""
-    tree = ast.parse(source, filename=path)
+    tree = parse_python(source, path)
     module = ImportResolver.module_name(path)
     result: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
 
@@ -81,7 +84,7 @@ def _function_nodes(source: str, path: str) -> dict[str, ast.FunctionDef | ast.A
 
 def _call_node(call: CallSite, source: str) -> ast.Call | None:
     try:
-        tree = ast.parse(source, filename=call.file_path)
+        tree = parse_python(source, call.file_path)
     except SyntaxError:
         return None
     return next((node for node in ast.walk(tree)
@@ -107,7 +110,7 @@ class SyntaxErrorRule(BaseRule):
             if not path.endswith(".py"):
                 continue
             try:
-                ast.parse(source, filename=path)
+                parse_python(source, path)
             except SyntaxError as error:
                 parent_sources = (
                     context.base_sources.get(path),
@@ -120,7 +123,7 @@ class SyntaxErrorRule(BaseRule):
                         if parent_source is None:
                             continue
                         try:
-                            ast.parse(parent_source, filename=path)
+                            parse_python(parent_source, path)
                         except SyntaxError:
                             preexisting_syntax_error = True
                             break
@@ -385,40 +388,48 @@ class SignatureMismatchRule(BaseRule):
         context: TierAContext,
         bound_receiver: bool,
     ) -> bool:
-        """Do not attribute the same binding failure when it existed in the base."""
-        valid_base: dict[str, str] = {}
-        for path, source in context.base_sources.items():
+        """Compare the same resolved call against every available parent."""
+        for parent_sources in (context.base_sources, context.left_sources, context.right_sources):
+            valid_base: dict[str, str] = {}
+            for path, source in parent_sources.items():
+                try:
+                    ast.parse(source, filename=path)
+                except SyntaxError:
+                    continue
+                valid_base[path] = source
+            if candidate_call.file_path not in valid_base:
+                continue
+            if parent_sources is not context.base_sources:
+                candidate_source = context.candidate_sources.get(candidate_call.file_path, "")
+                candidate_entity = _function_nodes(candidate_source, candidate_call.file_path).get(candidate_call.caller_symbol)
+                parent_entity = _function_nodes(valid_base[candidate_call.file_path], candidate_call.file_path).get(candidate_call.caller_symbol)
+                if (candidate_entity is None or parent_entity is None
+                        or ast.dump(candidate_entity) != ast.dump(parent_entity)):
+                    continue
             try:
-                ast.parse(source, filename=path)
-            except SyntaxError:
+                prior_calls = CallGraphBuilder().build_from_sources(valid_base)
+            except ValueError:
                 continue
-            valid_base[path] = source
-        if candidate_call.file_path not in valid_base:
-            return False
-        try:
-            prior_calls = CallGraphBuilder().build_from_sources(valid_base)
-        except ValueError:
-            return False
-        candidate_dump = ast.dump(candidate_node, include_attributes=False)
-        for prior in prior_calls:
-            if prior.caller_symbol != candidate_call.caller_symbol or prior.file_path != candidate_call.file_path:
-                continue
-            if prior.resolved_target is None or prior.resolved_target.qualified_name != symbol:
-                continue
-            prior_node = _call_node(prior, valid_base[prior.file_path])
-            target_source = valid_base.get(prior.resolved_target.file_path)
-            if prior_node is None or target_source is None:
-                continue
-            if ast.dump(prior_node, include_attributes=False) != candidate_dump:
-                continue
-            previous_target = _function_nodes(target_source, prior.resolved_target.file_path).get(symbol)
-            if previous_target is None:
-                continue
-            previous_error = _binding_error(
-                prior_node, _signature(previous_target, bound_receiver=bound_receiver),
-            )
-            if previous_error is not None:
-                return True
+            candidate_dump = ast.dump(candidate_node, include_attributes=False)
+            for prior in prior_calls:
+                if prior.caller_symbol != candidate_call.caller_symbol or prior.file_path != candidate_call.file_path:
+                    continue
+                if prior.resolved_target is None or prior.resolved_target.qualified_name != symbol:
+                    continue
+                prior_node = _call_node(prior, valid_base[prior.file_path])
+                target_source = valid_base.get(prior.resolved_target.file_path)
+                if prior_node is None or target_source is None:
+                    continue
+                if ast.dump(prior_node, include_attributes=False) != candidate_dump:
+                    continue
+                previous_target = _function_nodes(target_source, prior.resolved_target.file_path).get(symbol)
+                if previous_target is None:
+                    continue
+                previous_error = _binding_error(
+                    prior_node, _signature(previous_target, bound_receiver=bound_receiver),
+                )
+                if previous_error is not None:
+                    return True
         return False
 
 

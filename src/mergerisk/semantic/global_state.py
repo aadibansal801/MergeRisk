@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+from mergerisk.semantic.python_adapter import parse_python
 from dataclasses import dataclass
 from enum import Enum
 
@@ -177,7 +178,7 @@ class GlobalStateResolver:
             if not path.endswith(".py"):
                 continue
             try:
-                tree = ast.parse(source, filename=path)
+                tree = parse_python(source, path)
             except (SyntaxError, ValueError, TypeError):
                 continue
             globals_collector = _TopLevelGlobals()

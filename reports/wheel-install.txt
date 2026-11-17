@@ -1,0 +1,10 @@
+Processing c:\users\aadib\onedrive\desktop\mergerisk\dist\mergerisk-2.0.0-py3-none-any.whl
+Installing collected packages: mergerisk
+  Attempting uninstall: mergerisk
+    Found existing installation: mergerisk 2.0.0
+    Uninstalling mergerisk-2.0.0:
+      Successfully uninstalled mergerisk-2.0.0
+Successfully installed mergerisk-2.0.0
+
+[notice] A new release of pip is available: 25.1.1 -> 26.3
+[notice] To update, run: C:\Users\aadib\OneDrive\Desktop\MergeRisk\.test-runs\wheel-venv\Scripts\python.exe -m pip install --upgrade pip

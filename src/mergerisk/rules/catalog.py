@@ -19,7 +19,7 @@ RULES = {
         "title": "A call no longer fits the function",
         "explanation": "One branch changed a function's accepted arguments; the other changed or added a call using its old contract.",
         "example": "Target changes fetch() to fetch(timeout); source adds fetch(). MergeRisk never invents a timeout value.",
-        "repair": "REPORT_ONLY. Required values, argument order and business defaults need human judgment."},
+        "repair": "AUTO only for one proven parameter alpha-rename with the exact argument expression retained. Required values, reordering and changed defaults remain REPORT_ONLY."},
     "MR-PY-DUP-001": {
         "title": "The branches combined duplicate declarations",
         "explanation": "Repeated imports and definitions can have execution-order, decorator and import-hook effects, even when their syntax matches.",

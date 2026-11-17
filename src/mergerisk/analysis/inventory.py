@@ -7,6 +7,7 @@ import fnmatch
 from dataclasses import dataclass
 
 from mergerisk.git.snapshot import GitSnapshotReader
+from mergerisk.semantic.python_adapter import parse_python
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,9 @@ class RepositoryInventory:
             raise ValueError("revision must be non-empty")
         normalized_patterns = [pattern.replace("\\", "/").strip() for pattern in ignore_patterns]
         classifications: list[FileClassification] = []
-        for path in snapshot_reader.list_files_at(revision):
+        paths = snapshot_reader.list_files_at(revision)
+        snapshot_reader.prefetch(revision, [p for p in paths if p.endswith(".py") and cls._ignore_reason(p, normalized_patterns) is None])
+        for path in paths:
             ignored_reason = cls._ignore_reason(path, normalized_patterns)
             if ignored_reason is not None:
                 classifications.append(FileClassification(path, "skipped", ignored_reason))
@@ -49,7 +52,11 @@ class RepositoryInventory:
             if not path.endswith(".py"):
                 classifications.append(FileClassification(path, "skipped", "non_python"))
                 continue
-            source = snapshot_reader.read_blob_at(revision, path)
+            try:
+                source = snapshot_reader.read_blob_at(revision, path)
+            except (UnicodeError, SyntaxError):
+                classifications.append(FileClassification(path, "unsupported", "source_encoding"))
+                continue
             if source is None:
                 classifications.append(FileClassification(path, "skipped", "missing_blob"))
                 continue
@@ -57,7 +64,7 @@ class RepositoryInventory:
                 classifications.append(FileClassification(path, "unsupported", "binary"))
                 continue
             try:
-                ast.parse(source, filename=path)
+                parse_python(source, path)
             except (SyntaxError, ValueError, TypeError):
                 classifications.append(FileClassification(path, "unsupported", "parse_failure"))
             else:

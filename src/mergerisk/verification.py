@@ -46,13 +46,18 @@ def verify_runtime(service, preview, config: RuntimeConfig):
         blobs = read_blobs(service.repo, [oid for _, _, oid in entries.values()])
         with tempfile.TemporaryDirectory(prefix="mergerisk-runtime-") as temp:
             root = Path(temp)
-            for path, (_, _, oid) in entries.items():
+            root.chmod(0o755)
+            for path, (mode, _, oid) in entries.items():
                 validate_path(path)
                 destination = root / path
                 destination.parent.mkdir(parents=True, exist_ok=True)
+                parent = destination.parent
+                while parent != root:
+                    parent.chmod(0o755)
+                    parent = parent.parent
                 content = preview.repair.candidate.get(path, blobs[oid]) if role == "fixed" else blobs[oid]
                 destination.write_bytes(content)
-                destination.chmod(0o644)
+                destination.chmod(0o755 if mode == "100755" else 0o644)
             name = "mergerisk-" + uuid.uuid4().hex
             argv = [docker, "run", "--rm", "--pull=never", "--name", name,
                     "--network=none", "--read-only", "--user=65534:65534", "--cap-drop=ALL",

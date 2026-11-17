@@ -1,0 +1,262 @@
+{
+  "version": "2.0.0",
+  "platform_verified": "Windows 11 / Python 3.13.5 / Git 2.55.0",
+  "source_suite": {
+    "passed": 183,
+    "subtests": 32,
+    "warnings": 1
+  },
+  "independent_installed_suite": {
+    "passed": 183,
+    "subtests": 32,
+    "warnings": 1
+  },
+  "repair_corpus": {
+    "auto_denominator": 5,
+    "cases": [
+      {
+        "case": "alias",
+        "category": "repair",
+        "changed": true,
+        "correct": true,
+        "dynamic_constructs": 1,
+        "expects_auto": true,
+        "status": "partial",
+        "unresolved_references": 1,
+        "validation": "static_verified"
+      },
+      {
+        "case": "bom_crlf",
+        "category": "repair",
+        "changed": true,
+        "correct": true,
+        "dynamic_constructs": 1,
+        "expects_auto": true,
+        "status": "partial",
+        "unresolved_references": 1,
+        "validation": "static_verified"
+      },
+      {
+        "case": "clean",
+        "category": "clean",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 0,
+        "expects_auto": false,
+        "status": "success",
+        "unresolved_references": 0,
+        "validation": "validation_unavailable"
+      },
+      {
+        "case": "decorated_duplicates",
+        "category": "refusal",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 0,
+        "expects_auto": false,
+        "status": "success",
+        "unresolved_references": 0,
+        "validation": "validation_unavailable"
+      },
+      {
+        "case": "duplicate_import",
+        "category": "refusal",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 0,
+        "expects_auto": false,
+        "status": "success",
+        "unresolved_references": 0,
+        "validation": "validation_unavailable"
+      },
+      {
+        "case": "dynamic_refusal",
+        "category": "refusal",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 1,
+        "expects_auto": false,
+        "status": "partial",
+        "unresolved_references": 2,
+        "validation": "validation_unavailable"
+      },
+      {
+        "case": "encoding_cookie",
+        "category": "repair",
+        "changed": true,
+        "correct": true,
+        "dynamic_constructs": 1,
+        "expects_auto": true,
+        "status": "partial",
+        "unresolved_references": 1,
+        "validation": "static_verified"
+      },
+      {
+        "case": "json",
+        "category": "repair",
+        "changed": true,
+        "correct": true,
+        "dynamic_constructs": 1,
+        "expects_auto": true,
+        "status": "partial",
+        "unresolved_references": 1,
+        "validation": "static_verified"
+      },
+      {
+        "case": "keyword_rename",
+        "category": "repair",
+        "changed": true,
+        "correct": true,
+        "dynamic_constructs": 0,
+        "expects_auto": true,
+        "status": "success",
+        "unresolved_references": 0,
+        "validation": "static_verified"
+      },
+      {
+        "case": "local_import_refusal",
+        "category": "refusal",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 1,
+        "expects_auto": false,
+        "status": "partial",
+        "unresolved_references": 1,
+        "validation": "validation_unavailable"
+      },
+      {
+        "case": "rename_review",
+        "category": "refusal",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 0,
+        "expects_auto": false,
+        "status": "partial",
+        "unresolved_references": 1,
+        "validation": "validation_unavailable"
+      },
+      {
+        "case": "required_argument",
+        "category": "refusal",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 0,
+        "expects_auto": false,
+        "status": "success",
+        "unresolved_references": 0,
+        "validation": "validation_unavailable"
+      },
+      {
+        "case": "typo_review",
+        "category": "refusal",
+        "changed": false,
+        "correct": true,
+        "dynamic_constructs": 0,
+        "expects_auto": false,
+        "status": "success",
+        "unresolved_references": 0,
+        "validation": "validation_unavailable"
+      }
+    ],
+    "clean_controls": 1,
+    "correct_fix_rate": 1.0,
+    "correct_refusal_rate": 1.0,
+    "false_fix_rate": 0.0,
+    "partial_analyses": 7,
+    "refusal_denominator": 7,
+    "rules": {
+      "MR-PY-DUP-001": {
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      },
+      "MR-PY-IMPORT-001": {
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 5
+      },
+      "MR-PY-NAME-002": {
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 1
+      },
+      "MR-PY-RENAME-001": {
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 1
+      },
+      "MR-PY-SIG-002": {
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "tp": 2
+      }
+    },
+    "scope": "Small authored Python corpus; no universal correctness guarantee."
+  },
+  "benchmark": {
+    "environment": {
+      "platform": "Windows-11-10.0.26200-SP0",
+      "python": "3.13.5",
+      "git": "git version 2.55.0.windows.3"
+    },
+    "method": "One cold Python-cache sample per size; OS filesystem caches uncontrolled; includes tracemalloc overhead. Python heap peak excludes Git processes and OS buffers.",
+    "measurements": [
+      {
+        "python_files_per_revision": 10,
+        "snapshot_analysis": {
+          "seconds": 0.5526,
+          "python_heap_peak_mib": 0.227
+        },
+        "product_preview": {
+          "seconds": 0.8559,
+          "python_heap_peak_mib": 0.27
+        }
+      },
+      {
+        "python_files_per_revision": 50,
+        "snapshot_analysis": {
+          "seconds": 0.7966,
+          "python_heap_peak_mib": 0.495
+        },
+        "product_preview": {
+          "seconds": 1.3226,
+          "python_heap_peak_mib": 0.604
+        }
+      },
+      {
+        "python_files_per_revision": 200,
+        "snapshot_analysis": {
+          "seconds": 1.5061,
+          "python_heap_peak_mib": 1.475
+        },
+        "product_preview": {
+          "seconds": 2.4838,
+          "python_heap_peak_mib": 1.564
+        }
+      }
+    ]
+  },
+  "artifacts": {
+    "mergerisk-2.0.0-py3-none-any.whl": {
+      "bytes": 108964,
+      "sha256": "b2df49059072212548dffd18713ee60d8e9881bd72dab347d6be7d6a9de69c0f"
+    },
+    "mergerisk-2.0.0.tar.gz": {
+      "bytes": 285560,
+      "sha256": "9ebd159402d975858f256c442e7d2163a50e1d772ae9a7ea0a27ba7fb8a10e72"
+    }
+  },
+  "installed_wheel_payload_matches": true,
+  "runtime_container_execution": "unverified: Docker daemon unavailable",
+  "linux_ci": "configured, not executed; no push"
+}

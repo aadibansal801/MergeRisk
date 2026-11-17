@@ -1,81 +1,177 @@
 {
+  "auto_denominator": 5,
   "cases": [
     {
       "case": "alias",
+      "category": "repair",
       "changed": true,
       "correct": true,
+      "dynamic_constructs": 1,
       "expects_auto": true,
       "status": "partial",
+      "unresolved_references": 1,
       "validation": "static_verified"
     },
     {
       "case": "bom_crlf",
+      "category": "repair",
       "changed": true,
       "correct": true,
+      "dynamic_constructs": 1,
       "expects_auto": true,
       "status": "partial",
+      "unresolved_references": 1,
       "validation": "static_verified"
     },
     {
       "case": "clean",
+      "category": "clean",
       "changed": false,
       "correct": true,
+      "dynamic_constructs": 0,
       "expects_auto": false,
       "status": "success",
+      "unresolved_references": 0,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "decorated_duplicates",
+      "category": "refusal",
+      "changed": false,
+      "correct": true,
+      "dynamic_constructs": 0,
+      "expects_auto": false,
+      "status": "success",
+      "unresolved_references": 0,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "duplicate_import",
+      "category": "refusal",
+      "changed": false,
+      "correct": true,
+      "dynamic_constructs": 0,
+      "expects_auto": false,
+      "status": "success",
+      "unresolved_references": 0,
       "validation": "validation_unavailable"
     },
     {
       "case": "dynamic_refusal",
+      "category": "refusal",
       "changed": false,
       "correct": true,
+      "dynamic_constructs": 1,
       "expects_auto": false,
       "status": "partial",
+      "unresolved_references": 2,
       "validation": "validation_unavailable"
     },
     {
       "case": "encoding_cookie",
+      "category": "repair",
       "changed": true,
       "correct": true,
+      "dynamic_constructs": 1,
       "expects_auto": true,
       "status": "partial",
+      "unresolved_references": 1,
       "validation": "static_verified"
     },
     {
       "case": "json",
+      "category": "repair",
       "changed": true,
       "correct": true,
+      "dynamic_constructs": 1,
       "expects_auto": true,
       "status": "partial",
+      "unresolved_references": 1,
       "validation": "static_verified"
     },
     {
-      "case": "rename_review",
+      "case": "keyword_rename",
+      "category": "repair",
+      "changed": true,
+      "correct": true,
+      "dynamic_constructs": 0,
+      "expects_auto": true,
+      "status": "success",
+      "unresolved_references": 0,
+      "validation": "static_verified"
+    },
+    {
+      "case": "local_import_refusal",
+      "category": "refusal",
       "changed": false,
       "correct": true,
+      "dynamic_constructs": 1,
       "expects_auto": false,
       "status": "partial",
+      "unresolved_references": 1,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "rename_review",
+      "category": "refusal",
+      "changed": false,
+      "correct": true,
+      "dynamic_constructs": 0,
+      "expects_auto": false,
+      "status": "partial",
+      "unresolved_references": 1,
       "validation": "validation_unavailable"
     },
     {
       "case": "required_argument",
+      "category": "refusal",
       "changed": false,
       "correct": true,
+      "dynamic_constructs": 0,
       "expects_auto": false,
       "status": "success",
+      "unresolved_references": 0,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "typo_review",
+      "category": "refusal",
+      "changed": false,
+      "correct": true,
+      "dynamic_constructs": 0,
+      "expects_auto": false,
+      "status": "success",
+      "unresolved_references": 0,
       "validation": "validation_unavailable"
     }
   ],
+  "clean_controls": 1,
   "correct_fix_rate": 1.0,
   "correct_refusal_rate": 1.0,
   "false_fix_rate": 0.0,
-  "partial_analyses": 6,
+  "partial_analyses": 7,
+  "refusal_denominator": 7,
   "rules": {
+    "MR-PY-DUP-001": {
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 2
+    },
     "MR-PY-IMPORT-001": {
       "fn": 0,
       "fp": 0,
       "precision": 1.0,
       "recall": 1.0,
-      "tp": 4
+      "tp": 5
+    },
+    "MR-PY-NAME-002": {
+      "fn": 0,
+      "fp": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "tp": 1
     },
     "MR-PY-RENAME-001": {
       "fn": 0,
@@ -89,7 +185,7 @@
       "fp": 0,
       "precision": 1.0,
       "recall": 1.0,
-      "tp": 1
+      "tp": 2
     }
   },
   "scope": "Small authored Python corpus; no universal correctness guarantee."

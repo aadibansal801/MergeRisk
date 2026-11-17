@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import ast
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from mergerisk.domain.findings import CanonicalFinding, Confidence, EvidenceLevel, InvolvedEntity, Severity, SourceLocation
 from mergerisk.domain.revisions import BranchRole
@@ -90,10 +90,17 @@ def mechanical_issues(context: TierAContext) -> tuple[list[MechanicalIssue], lis
                 issues.append(MechanicalIssue(finding, path, ref, replacement=replacement))
             elif any(p and ref.name in p.bound for p in parents):
                 replacement = unique_near_miss(ref.name, merged.bound)
-                if replacement:
+                origins = [(removing, using) for removing, using in (("left", "right"), ("right", "left"))
+                           if models[removing].get(path) and models[using].get(path)
+                           and ref.name not in models[removing][path].bound
+                           and ref.name in models[using][path].bound
+                           and any(r.name == ref.name and r.scope == ref.scope and not r.missing
+                                   for r in models[using][path].references)]
+                if replacement and len(origins) == 1:
+                    removing, using = origins[0]
                     finding = _make(context, path, ref.node, "MR-PY-NAME-002", "A formerly bound name is now undefined",
                                     f"'{ref.name}' lost its binding when the branches combined. '{replacement}' is a unique spelling match, but spelling cannot establish intent. Review this suggestion.",
-                                    ref.name, "left", "right", ref.scope)
+                                    ref.name, removing, using, ref.scope)
                     issues.append(MechanicalIssue(finding, path, ref, replacement=replacement))
             else:
                 replacement = unique_near_miss(ref.name, merged.bound)
@@ -160,7 +167,15 @@ def combine_findings(findings, issues):
     findings = [f for f in findings if not (f.rule_id == "MR-PY-DEL-001" and
                 any((location.path, entity.symbol.rsplit(".", 1)[-1]) in specific
                     for location in f.locations for entity in f.entities if entity.role == "deleted_definition"))]
-    return sorted(findings + [i.finding for i in issues], key=lambda f: (f.rule_id, f.finding_id))
+    grouped = {}
+    for finding in findings + [i.finding for i in issues]:
+        old = grouped.get(finding.finding_id)
+        grouped[finding.finding_id] = finding if old is None else replace(
+            old, locations=tuple(dict.fromkeys(old.locations + finding.locations)),
+            evidence=tuple(dict.fromkeys(old.evidence + finding.evidence)),
+            entities=tuple(dict.fromkeys(old.entities + finding.entities)),
+            relationships=tuple(dict.fromkeys(old.relationships + finding.relationships)))
+    return sorted(grouped.values(), key=lambda f: (f.rule_id, f.finding_id))
 
 
 def _definition_shape(node) -> str:

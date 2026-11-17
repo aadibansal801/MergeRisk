@@ -84,7 +84,7 @@ def test_preexisting_incompatible_call_is_not_attributed_to_merge() -> None:
 
 
 def test_unexpected_keyword_reports_signature_mismatch() -> None:
-    base = "def fetch(url):\n    return url\n"
+    base = "def fetch(url, invalid_arg=False):\n    return url\n"
     left = "def fetch(url, timeout=5):\n    return url\n"
     right = base + "\ndef caller():\n    return fetch(url='a', invalid_arg=True)\n"
     candidate = left + "\ndef caller():\n    return fetch(url='a', invalid_arg=True)\n"
@@ -93,6 +93,14 @@ def test_unexpected_keyword_reports_signature_mismatch() -> None:
 
     assert len(findings) == 1
     assert "unexpected keyword" in findings[0].summary
+
+
+def test_keyword_failure_already_on_source_parent_is_not_merge_introduced() -> None:
+    base = "def fetch(url):\n    return url\n"
+    left = "def fetch(url, timeout=5):\n    return url\n"
+    right = base + "\ndef caller():\n    return fetch(url='a', invalid_arg=True)\n"
+    candidate = left + "\ndef caller():\n    return fetch(url='a', invalid_arg=True)\n"
+    assert SignatureMismatchRule().evaluate(_context(base, left, right, candidate)) == []
 
 
 def test_syntax_rule_uses_parse_error_line_and_column() -> None:

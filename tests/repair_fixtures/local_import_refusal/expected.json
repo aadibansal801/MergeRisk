@@ -1,0 +1,10 @@
+{
+  "auto": false,
+  "category": "refusal",
+  "findings": [
+    {
+      "rule_id": "MR-PY-IMPORT-001",
+      "symbol": "app.py:json"
+    }
+  ]
+}

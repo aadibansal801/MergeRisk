@@ -1,0 +1,10 @@
+{
+  "auto": false,
+  "category": "refusal",
+  "findings": [
+    {
+      "rule_id": "MR-PY-DUP-001",
+      "symbol": "app.py:f"
+    }
+  ]
+}

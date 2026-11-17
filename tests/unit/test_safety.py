@@ -31,3 +31,11 @@ def test_runtime_is_explicit_and_unavailable_without_sandbox(monkeypatch):
             RuntimeConfig(image, ("python",))
     with pytest.raises(ValueError):
         RuntimeConfig("sha256:" + "a" * 64, ())
+
+
+def test_compiler_scope_syntax_is_detected_without_execution():
+    from mergerisk.analysis.pipeline import AnalysisOrchestrator
+    valid = {"app.py": "value = 1\n"}
+    candidate = {"app.py": "return 1\n"}
+    result = AnalysisOrchestrator().analyze_sources(valid, valid, valid, candidate)
+    assert [f.rule_id for f in result.findings] == ["MR-PY-SYNTAX-001"]

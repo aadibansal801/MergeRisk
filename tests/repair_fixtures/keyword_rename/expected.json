@@ -1,0 +1,10 @@
+{
+  "auto": true,
+  "category": "repair",
+  "findings": [
+    {
+      "rule_id": "MR-PY-SIG-002",
+      "symbol": "app.fetch"
+    }
+  ]
+}

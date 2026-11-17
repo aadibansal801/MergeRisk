@@ -1,0 +1,10 @@
+{
+  "auto": false,
+  "category": "refusal",
+  "findings": [
+    {
+      "rule_id": "MR-PY-NAME-002",
+      "symbol": "app.py:colour"
+    }
+  ]
+}

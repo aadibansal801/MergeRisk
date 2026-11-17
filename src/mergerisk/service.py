@@ -12,7 +12,7 @@ from mergerisk.analysis.pipeline import AnalysisConfig, AnalysisOrchestrator
 from mergerisk.domain.results import AnalysisResult, AnalysisStatus
 from mergerisk.domain.revisions import RevisionContext
 from mergerisk.git import GitScenario, GitScenarioAssembler
-from mergerisk.git.plumbing import read_blobs, run_git, tree_entries
+from mergerisk.git.plumbing import PreparedRefUpdate, git_identity, read_blobs, run_git, tree_entries
 from mergerisk.repair import RepairResult, decode_source, digest, repair_candidate, static_defects, text_versions
 
 
@@ -150,7 +150,8 @@ class MergeService:
                 run_git(self.repo, ["update-index", "-z", "--index-info"], data=bytes(records), env=env)
             tree = run_git(self.repo, ["write-tree"], env=env).stdout.decode().strip()
         message = f"MergeRisk: verified candidate merge\n\nStatic validation: {repair.validation}\nCoverage: {repair.analysis.status.value}\nPreview: {preview.fingerprint}\n"
-        commit = run_git(self.repo, ["commit-tree", tree, "-p", scenario.left_commit, "-p", scenario.right_commit], data=message.encode()).stdout.decode().strip()
+        commit = run_git(self.repo, ["commit-tree", tree, "-p", scenario.left_commit, "-p", scenario.right_commit],
+                         data=message.encode(), env=git_identity(self.repo)).stdout.decode().strip()
         ref = "refs/mergerisk/" + uuid.uuid4().hex
         run_git(self.repo, ["update-ref", ref, commit, "0" * len(commit)])
         parents = run_git(self.repo, ["rev-list", "--parents", "-n", "1", commit]).stdout.decode().split()
@@ -164,24 +165,41 @@ class MergeService:
         commit, ref = artifact["commit"], artifact["ref"]
         if not ref.startswith("refs/mergerisk/") or self.assembler.resolve_commit(ref) != commit:
             raise ValueError("Artifact reference is stale or unrecognized")
+        git_dir = Path(run_git(self.repo, ["rev-parse", "--absolute-git-dir"]).stdout.decode("utf-8", "surrogateescape").strip())
         branch = run_git(self.repo, ["symbolic-ref", "-q", "HEAD"], check=False)
         if branch.returncode:
             raise ValueError("Detached HEAD: check out the target branch before applying")
+        branch_name = branch.stdout.decode("utf-8", "surrogateescape").strip()
         current = self.assembler.resolve_commit("HEAD")
         parents = run_git(self.repo, ["rev-list", "--parents", "-n", "1", commit]).stdout.decode().split()
         if current != expected_head or len(parents) != 3 or parents[1] != expected_head:
             raise ValueError("HEAD must exactly match the analyzed left SHA")
-        status = run_git(self.repo, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored"]).stdout
-        if status:
-            raise ValueError("Worktree/index must be clean, including untracked and ignored files")
-        if any(mode not in {"100644", "100755"} for mode, _, _ in tree_entries(self.repo, commit).values()):
-            raise ValueError("Applying symlink or submodule trees is unsupported")
-        filters = run_git(self.repo, ["config", "--local", "--get-regexp", r"^filter\..*\.(clean|smudge|process)$"], check=False)
-        if filters.returncode == 0:
-            raise ValueError("Configured external content filters prevent safe automatic checkout")
-        # Git performs its checked fast-forward, index locking and ref compare-and-swap.
-        run_git(self.repo, ["merge", "--ff-only", "--no-edit", "--no-verify", commit])
+        with PreparedRefUpdate(self.repo, branch_name, commit, expected_head) as transaction:
+            # Git's prepared transaction locks both the checked-out branch and HEAD.
+            if (not (git_dir / "HEAD.lock").exists()
+                    or run_git(self.repo, ["symbolic-ref", "HEAD"]).stdout != branch.stdout
+                    or self.assembler.resolve_commit("HEAD") != expected_head):
+                raise ValueError("Concurrent checkout change or unsupported ref backend; apply refused")
+            for revision in (expected_head, commit):
+                if any(mode not in {"100644", "100755"} for mode, _, _ in tree_entries(self.repo, revision).values()):
+                    raise ValueError("Applying symlink or submodule trees is unsupported")
+            filters = run_git(self.repo, ["config", "--includes", "--get-regexp", r"^filter\..*\.(clean|smudge|process)$"], check=False)
+            if filters.returncode == 0:
+                raise ValueError("Configured external content filters prevent safe automatic checkout")
+            status = run_git(self.repo, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored"]).stdout
+            if status:
+                raise ValueError("Worktree/index must be clean, including untracked and ignored files")
+            try:
+                run_git(self.repo, ["read-tree", "-m", "-u", expected_head, commit])
+                transaction.commit()
+            except (OSError, RuntimeError) as error:
+                if self.assembler.resolve_commit("HEAD") == expected_head:
+                    try:
+                        run_git(self.repo, ["read-tree", "-m", "-u", commit, expected_head])
+                    except (OSError, RuntimeError) as rollback_error:
+                        raise RuntimeError(f"Apply failed and Git refused a safe rollback: {rollback_error}. Branch reference is unchanged; inspect the worktree before retrying.") from error
+                raise
         if self.assembler.resolve_commit("HEAD") != commit or run_git(self.repo, ["symbolic-ref", "HEAD"]).stdout != branch.stdout:
-            raise RuntimeError("Concurrent checkout change detected after fast-forward; inspect Git reflog")
+            raise RuntimeError("Unexpected branch state after checked fast-forward; inspect Git reflog")
         artifact["applied"] = True
         return artifact

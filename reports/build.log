@@ -1,0 +1,627 @@
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - setuptools>=68
+* Getting build dependencies for sdist...
+running egg_info
+writing src\mergerisk.egg-info\PKG-INFO
+writing dependency_links to src\mergerisk.egg-info\dependency_links.txt
+writing entry points to src\mergerisk.egg-info\entry_points.txt
+writing requirements to src\mergerisk.egg-info\requires.txt
+writing top-level names to src\mergerisk.egg-info\top_level.txt
+reading manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files found matching 'MergeRisk_report_remade.docx'
+no previously-included directories found matching '.test-runs'
+writing manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+* Installed build dependency versions:
+  - setuptools==84.2.1
+* Building sdist...
+running sdist
+running egg_info
+writing src\mergerisk.egg-info\PKG-INFO
+writing dependency_links to src\mergerisk.egg-info\dependency_links.txt
+writing entry points to src\mergerisk.egg-info\entry_points.txt
+writing requirements to src\mergerisk.egg-info\requires.txt
+writing top-level names to src\mergerisk.egg-info\top_level.txt
+reading manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files found matching 'MergeRisk_report_remade.docx'
+no previously-included directories found matching '.test-runs'
+writing manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+running check
+creating mergerisk-2.0.0
+creating mergerisk-2.0.0\.github\workflows
+creating mergerisk-2.0.0\detector
+creating mergerisk-2.0.0\docs
+creating mergerisk-2.0.0\reports
+creating mergerisk-2.0.0\reports\evaluation
+creating mergerisk-2.0.0\scripts
+creating mergerisk-2.0.0\src\mergerisk
+creating mergerisk-2.0.0\src\mergerisk.egg-info
+creating mergerisk-2.0.0\src\mergerisk\analysis
+creating mergerisk-2.0.0\src\mergerisk\domain
+creating mergerisk-2.0.0\src\mergerisk\eval
+creating mergerisk-2.0.0\src\mergerisk\git
+creating mergerisk-2.0.0\src\mergerisk\reporting
+creating mergerisk-2.0.0\src\mergerisk\rules
+creating mergerisk-2.0.0\src\mergerisk\semantic
+creating mergerisk-2.0.0\src\mergerisk\static
+creating mergerisk-2.0.0\src\mergerisk\templates
+creating mergerisk-2.0.0\tests
+creating mergerisk-2.0.0\tests\integration
+creating mergerisk-2.0.0\tests\repair_fixtures\alias
+creating mergerisk-2.0.0\tests\repair_fixtures\bom_crlf
+creating mergerisk-2.0.0\tests\repair_fixtures\clean
+creating mergerisk-2.0.0\tests\repair_fixtures\decorated_duplicates
+creating mergerisk-2.0.0\tests\repair_fixtures\duplicate_import
+creating mergerisk-2.0.0\tests\repair_fixtures\dynamic_refusal
+creating mergerisk-2.0.0\tests\repair_fixtures\encoding_cookie
+creating mergerisk-2.0.0\tests\repair_fixtures\json
+creating mergerisk-2.0.0\tests\repair_fixtures\keyword_rename
+creating mergerisk-2.0.0\tests\repair_fixtures\local_import_refusal
+creating mergerisk-2.0.0\tests\repair_fixtures\rename_review
+creating mergerisk-2.0.0\tests\repair_fixtures\required_argument
+creating mergerisk-2.0.0\tests\repair_fixtures\typo_review
+creating mergerisk-2.0.0\tests\scenarios\01_signature_mismatch
+creating mergerisk-2.0.0\tests\scenarios\02_shared_state_write
+creating mergerisk-2.0.0\tests\scenarios\03_shared_state_read_only_edge_case
+creating mergerisk-2.0.0\tests\scenarios\04_call_dependency
+creating mergerisk-2.0.0\tests\scenarios\05_duplicate_addition
+creating mergerisk-2.0.0\tests\scenarios\06_deleted_dependency
+creating mergerisk-2.0.0\tests\scenarios\07_same_entity_changed
+creating mergerisk-2.0.0\tests\scenarios\08_true_negative_unrelated
+creating mergerisk-2.0.0\tests\scenarios\09_true_negative_common_helper
+creating mergerisk-2.0.0\tests\scenarios\10_both_delete_same_function_safe
+creating mergerisk-2.0.0\tests\scenarios\11_class_method_signature_mismatch
+creating mergerisk-2.0.0\tests\scenarios\12_cosmetic_change_false_positive_trap
+creating mergerisk-2.0.0\tests\scenarios\13_shared_global_write
+creating mergerisk-2.0.0\tests\scenarios\14_shared_global_read_only
+creating mergerisk-2.0.0\tests\scenarios\15_preexisting_shared_global
+creating mergerisk-2.0.0\tests\scenarios\16_global_attribute_mutation_unresolved
+creating mergerisk-2.0.0\tests\scenarios\17_recursive_signature_mismatch
+creating mergerisk-2.0.0\tests\scenarios\scenario_01_signature_change
+creating mergerisk-2.0.0\tests\scenarios\scenario_02_unrelated_additions
+creating mergerisk-2.0.0\tests\scenarios\scenario_03_readonly_shared_global
+creating mergerisk-2.0.0\tests\scenarios\scenario_04_deleted_function
+creating mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_introduced
+creating mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_preexisting
+creating mergerisk-2.0.0\tests\unit
+copying files to mergerisk-2.0.0...
+copying .gitattributes -> mergerisk-2.0.0
+copying .gitignore -> mergerisk-2.0.0
+copying AGENTS.md -> mergerisk-2.0.0
+copying CHANGELOG.md -> mergerisk-2.0.0
+copying MANIFEST.in -> mergerisk-2.0.0
+copying MERGERISK_BUILD_SPEC.md -> mergerisk-2.0.0
+copying MERGERISK_V2_DESIGN.md -> mergerisk-2.0.0
+copying README.md -> mergerisk-2.0.0
+copying cli.py -> mergerisk-2.0.0
+copying pyproject.toml -> mergerisk-2.0.0
+copying requirements-tested.txt -> mergerisk-2.0.0
+copying .github\workflows\ci.yml -> mergerisk-2.0.0\.github\workflows
+copying detector\__init__.py -> mergerisk-2.0.0\detector
+copying detector\change_extractor.py -> mergerisk-2.0.0\detector
+copying detector\entity_extractor.py -> mergerisk-2.0.0\detector
+copying detector\interaction_analyzer.py -> mergerisk-2.0.0\detector
+copying detector\report.py -> mergerisk-2.0.0\detector
+copying detector\risk_classifier.py -> mergerisk-2.0.0\detector
+copying docs\ARCHITECTURE.md -> mergerisk-2.0.0\docs
+copying docs\DECISIONS.md -> mergerisk-2.0.0\docs
+copying docs\PROGRESS.md -> mergerisk-2.0.0\docs
+copying docs\SECURITY.md -> mergerisk-2.0.0\docs
+copying docs\TESTING.md -> mergerisk-2.0.0\docs
+copying docs\USER_GUIDE.md -> mergerisk-2.0.0\docs
+copying reports\benchmark-after.json -> mergerisk-2.0.0\reports
+copying reports\benchmark-before.json -> mergerisk-2.0.0\reports
+copying reports\browser-smoke.json -> mergerisk-2.0.0\reports
+copying reports\dashboard-desktop.jpg -> mergerisk-2.0.0\reports
+copying reports\dashboard-mobile.jpg -> mergerisk-2.0.0\reports
+copying reports\demo-output.txt -> mergerisk-2.0.0\reports
+copying reports\demo.json -> mergerisk-2.0.0\reports
+copying reports\fresh-wheel.json -> mergerisk-2.0.0\reports
+copying reports\tests-final.txt -> mergerisk-2.0.0\reports
+copying reports\tests-installed-wheel.txt -> mergerisk-2.0.0\reports
+copying reports\wheel-install.txt -> mergerisk-2.0.0\reports
+copying reports\evaluation\build-baseline.txt -> mergerisk-2.0.0\reports\evaluation
+copying reports\evaluation\build-final.txt -> mergerisk-2.0.0\reports\evaluation
+copying reports\evaluation\build-phase1.txt -> mergerisk-2.0.0\reports\evaluation
+copying reports\evaluation\mr2-002-baseline.json -> mergerisk-2.0.0\reports\evaluation
+copying reports\evaluation\mr2-002-post-change.json -> mergerisk-2.0.0\reports\evaluation
+copying reports\evaluation\mr2-003-post-change.json -> mergerisk-2.0.0\reports\evaluation
+copying reports\evaluation\repairs.json -> mergerisk-2.0.0\reports\evaluation
+copying scripts\benchmark.py -> mergerisk-2.0.0\scripts
+copying scripts\demo.py -> mergerisk-2.0.0\scripts
+copying scripts\evaluate_repairs.py -> mergerisk-2.0.0\scripts
+copying scripts\release_smoke.py -> mergerisk-2.0.0\scripts
+copying src\mergerisk\__init__.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\__main__.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\cli.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\dashboard.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\history.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\repair.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\sample.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\service.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk\verification.py -> mergerisk-2.0.0\src\mergerisk
+copying src\mergerisk.egg-info\PKG-INFO -> mergerisk-2.0.0\src\mergerisk.egg-info
+copying src\mergerisk.egg-info\SOURCES.txt -> mergerisk-2.0.0\src\mergerisk.egg-info
+copying src\mergerisk.egg-info\dependency_links.txt -> mergerisk-2.0.0\src\mergerisk.egg-info
+copying src\mergerisk.egg-info\entry_points.txt -> mergerisk-2.0.0\src\mergerisk.egg-info
+copying src\mergerisk.egg-info\requires.txt -> mergerisk-2.0.0\src\mergerisk.egg-info
+copying src\mergerisk.egg-info\top_level.txt -> mergerisk-2.0.0\src\mergerisk.egg-info
+copying src\mergerisk\analysis\__init__.py -> mergerisk-2.0.0\src\mergerisk\analysis
+copying src\mergerisk\analysis\changes.py -> mergerisk-2.0.0\src\mergerisk\analysis
+copying src\mergerisk\analysis\inventory.py -> mergerisk-2.0.0\src\mergerisk\analysis
+copying src\mergerisk\analysis\pipeline.py -> mergerisk-2.0.0\src\mergerisk\analysis
+copying src\mergerisk\domain\__init__.py -> mergerisk-2.0.0\src\mergerisk\domain
+copying src\mergerisk\domain\findings.py -> mergerisk-2.0.0\src\mergerisk\domain
+copying src\mergerisk\domain\results.py -> mergerisk-2.0.0\src\mergerisk\domain
+copying src\mergerisk\domain\revisions.py -> mergerisk-2.0.0\src\mergerisk\domain
+copying src\mergerisk\eval\__init__.py -> mergerisk-2.0.0\src\mergerisk\eval
+copying src\mergerisk\eval\matcher.py -> mergerisk-2.0.0\src\mergerisk\eval
+copying src\mergerisk\eval\metrics.py -> mergerisk-2.0.0\src\mergerisk\eval
+copying src\mergerisk\git\__init__.py -> mergerisk-2.0.0\src\mergerisk\git
+copying src\mergerisk\git\plumbing.py -> mergerisk-2.0.0\src\mergerisk\git
+copying src\mergerisk\git\scenario.py -> mergerisk-2.0.0\src\mergerisk\git
+copying src\mergerisk\git\snapshot.py -> mergerisk-2.0.0\src\mergerisk\git
+copying src\mergerisk\reporting\__init__.py -> mergerisk-2.0.0\src\mergerisk\reporting
+copying src\mergerisk\reporting\summary.py -> mergerisk-2.0.0\src\mergerisk\reporting
+copying src\mergerisk\rules\__init__.py -> mergerisk-2.0.0\src\mergerisk\rules
+copying src\mergerisk\rules\base.py -> mergerisk-2.0.0\src\mergerisk\rules
+copying src\mergerisk\rules\catalog.py -> mergerisk-2.0.0\src\mergerisk\rules
+copying src\mergerisk\rules\mechanical.py -> mergerisk-2.0.0\src\mergerisk\rules
+copying src\mergerisk\rules\tier_a.py -> mergerisk-2.0.0\src\mergerisk\rules
+copying src\mergerisk\rules\v1_rules.py -> mergerisk-2.0.0\src\mergerisk\rules
+copying src\mergerisk\semantic\__init__.py -> mergerisk-2.0.0\src\mergerisk\semantic
+copying src\mergerisk\semantic\call_graph.py -> mergerisk-2.0.0\src\mergerisk\semantic
+copying src\mergerisk\semantic\global_state.py -> mergerisk-2.0.0\src\mergerisk\semantic
+copying src\mergerisk\semantic\imports.py -> mergerisk-2.0.0\src\mergerisk\semantic
+copying src\mergerisk\semantic\python_adapter.py -> mergerisk-2.0.0\src\mergerisk\semantic
+copying src\mergerisk\semantic\symbols.py -> mergerisk-2.0.0\src\mergerisk\semantic
+copying src\mergerisk\static\app.css -> mergerisk-2.0.0\src\mergerisk\static
+copying src\mergerisk\static\app.js -> mergerisk-2.0.0\src\mergerisk\static
+copying src\mergerisk\templates\base.html -> mergerisk-2.0.0\src\mergerisk\templates
+copying src\mergerisk\templates\history.html -> mergerisk-2.0.0\src\mergerisk\templates
+copying src\mergerisk\templates\learn.html -> mergerisk-2.0.0\src\mergerisk\templates
+copying src\mergerisk\templates\new.html -> mergerisk-2.0.0\src\mergerisk\templates
+copying src\mergerisk\templates\repositories.html -> mergerisk-2.0.0\src\mergerisk\templates
+copying src\mergerisk\templates\result.html -> mergerisk-2.0.0\src\mergerisk\templates
+copying src\mergerisk\templates\settings.html -> mergerisk-2.0.0\src\mergerisk\templates
+copying tests\generate_eval_reports.py -> mergerisk-2.0.0\tests
+copying tests\generate_mr2_003_reports.py -> mergerisk-2.0.0\tests
+copying tests\run_eval.py -> mergerisk-2.0.0\tests
+copying tests\integration\test_dashboard.py -> mergerisk-2.0.0\tests\integration
+copying tests\integration\test_git_scenario.py -> mergerisk-2.0.0\tests\integration
+copying tests\integration\test_product.py -> mergerisk-2.0.0\tests\integration
+copying tests\integration\test_release_edges.py -> mergerisk-2.0.0\tests\integration
+copying tests\repair_fixtures\alias\base.py -> mergerisk-2.0.0\tests\repair_fixtures\alias
+copying tests\repair_fixtures\alias\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\alias
+copying tests\repair_fixtures\alias\expected_fixed.py -> mergerisk-2.0.0\tests\repair_fixtures\alias
+copying tests\repair_fixtures\alias\left.py -> mergerisk-2.0.0\tests\repair_fixtures\alias
+copying tests\repair_fixtures\alias\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\alias
+copying tests\repair_fixtures\alias\right.py -> mergerisk-2.0.0\tests\repair_fixtures\alias
+copying tests\repair_fixtures\bom_crlf\base.py -> mergerisk-2.0.0\tests\repair_fixtures\bom_crlf
+copying tests\repair_fixtures\bom_crlf\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\bom_crlf
+copying tests\repair_fixtures\bom_crlf\expected_fixed.py -> mergerisk-2.0.0\tests\repair_fixtures\bom_crlf
+copying tests\repair_fixtures\bom_crlf\left.py -> mergerisk-2.0.0\tests\repair_fixtures\bom_crlf
+copying tests\repair_fixtures\bom_crlf\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\bom_crlf
+copying tests\repair_fixtures\bom_crlf\right.py -> mergerisk-2.0.0\tests\repair_fixtures\bom_crlf
+copying tests\repair_fixtures\clean\base.py -> mergerisk-2.0.0\tests\repair_fixtures\clean
+copying tests\repair_fixtures\clean\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\clean
+copying tests\repair_fixtures\clean\left.py -> mergerisk-2.0.0\tests\repair_fixtures\clean
+copying tests\repair_fixtures\clean\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\clean
+copying tests\repair_fixtures\clean\right.py -> mergerisk-2.0.0\tests\repair_fixtures\clean
+copying tests\repair_fixtures\decorated_duplicates\base.py -> mergerisk-2.0.0\tests\repair_fixtures\decorated_duplicates
+copying tests\repair_fixtures\decorated_duplicates\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\decorated_duplicates
+copying tests\repair_fixtures\decorated_duplicates\left.py -> mergerisk-2.0.0\tests\repair_fixtures\decorated_duplicates
+copying tests\repair_fixtures\decorated_duplicates\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\decorated_duplicates
+copying tests\repair_fixtures\decorated_duplicates\right.py -> mergerisk-2.0.0\tests\repair_fixtures\decorated_duplicates
+copying tests\repair_fixtures\duplicate_import\base.py -> mergerisk-2.0.0\tests\repair_fixtures\duplicate_import
+copying tests\repair_fixtures\duplicate_import\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\duplicate_import
+copying tests\repair_fixtures\duplicate_import\left.py -> mergerisk-2.0.0\tests\repair_fixtures\duplicate_import
+copying tests\repair_fixtures\duplicate_import\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\duplicate_import
+copying tests\repair_fixtures\duplicate_import\right.py -> mergerisk-2.0.0\tests\repair_fixtures\duplicate_import
+copying tests\repair_fixtures\dynamic_refusal\base.py -> mergerisk-2.0.0\tests\repair_fixtures\dynamic_refusal
+copying tests\repair_fixtures\dynamic_refusal\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\dynamic_refusal
+copying tests\repair_fixtures\dynamic_refusal\left.py -> mergerisk-2.0.0\tests\repair_fixtures\dynamic_refusal
+copying tests\repair_fixtures\dynamic_refusal\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\dynamic_refusal
+copying tests\repair_fixtures\dynamic_refusal\right.py -> mergerisk-2.0.0\tests\repair_fixtures\dynamic_refusal
+copying tests\repair_fixtures\encoding_cookie\base.py -> mergerisk-2.0.0\tests\repair_fixtures\encoding_cookie
+copying tests\repair_fixtures\encoding_cookie\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\encoding_cookie
+copying tests\repair_fixtures\encoding_cookie\expected_fixed.py -> mergerisk-2.0.0\tests\repair_fixtures\encoding_cookie
+copying tests\repair_fixtures\encoding_cookie\left.py -> mergerisk-2.0.0\tests\repair_fixtures\encoding_cookie
+copying tests\repair_fixtures\encoding_cookie\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\encoding_cookie
+copying tests\repair_fixtures\encoding_cookie\right.py -> mergerisk-2.0.0\tests\repair_fixtures\encoding_cookie
+copying tests\repair_fixtures\json\base.py -> mergerisk-2.0.0\tests\repair_fixtures\json
+copying tests\repair_fixtures\json\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\json
+copying tests\repair_fixtures\json\expected_fixed.py -> mergerisk-2.0.0\tests\repair_fixtures\json
+copying tests\repair_fixtures\json\left.py -> mergerisk-2.0.0\tests\repair_fixtures\json
+copying tests\repair_fixtures\json\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\json
+copying tests\repair_fixtures\json\right.py -> mergerisk-2.0.0\tests\repair_fixtures\json
+copying tests\repair_fixtures\keyword_rename\base.py -> mergerisk-2.0.0\tests\repair_fixtures\keyword_rename
+copying tests\repair_fixtures\keyword_rename\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\keyword_rename
+copying tests\repair_fixtures\keyword_rename\expected_fixed.py -> mergerisk-2.0.0\tests\repair_fixtures\keyword_rename
+copying tests\repair_fixtures\keyword_rename\left.py -> mergerisk-2.0.0\tests\repair_fixtures\keyword_rename
+copying tests\repair_fixtures\keyword_rename\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\keyword_rename
+copying tests\repair_fixtures\keyword_rename\right.py -> mergerisk-2.0.0\tests\repair_fixtures\keyword_rename
+copying tests\repair_fixtures\local_import_refusal\base.py -> mergerisk-2.0.0\tests\repair_fixtures\local_import_refusal
+copying tests\repair_fixtures\local_import_refusal\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\local_import_refusal
+copying tests\repair_fixtures\local_import_refusal\left.py -> mergerisk-2.0.0\tests\repair_fixtures\local_import_refusal
+copying tests\repair_fixtures\local_import_refusal\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\local_import_refusal
+copying tests\repair_fixtures\local_import_refusal\right.py -> mergerisk-2.0.0\tests\repair_fixtures\local_import_refusal
+copying tests\repair_fixtures\rename_review\base.py -> mergerisk-2.0.0\tests\repair_fixtures\rename_review
+copying tests\repair_fixtures\rename_review\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\rename_review
+copying tests\repair_fixtures\rename_review\left.py -> mergerisk-2.0.0\tests\repair_fixtures\rename_review
+copying tests\repair_fixtures\rename_review\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\rename_review
+copying tests\repair_fixtures\rename_review\right.py -> mergerisk-2.0.0\tests\repair_fixtures\rename_review
+copying tests\repair_fixtures\required_argument\base.py -> mergerisk-2.0.0\tests\repair_fixtures\required_argument
+copying tests\repair_fixtures\required_argument\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\required_argument
+copying tests\repair_fixtures\required_argument\left.py -> mergerisk-2.0.0\tests\repair_fixtures\required_argument
+copying tests\repair_fixtures\required_argument\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\required_argument
+copying tests\repair_fixtures\required_argument\right.py -> mergerisk-2.0.0\tests\repair_fixtures\required_argument
+copying tests\repair_fixtures\typo_review\base.py -> mergerisk-2.0.0\tests\repair_fixtures\typo_review
+copying tests\repair_fixtures\typo_review\expected.json -> mergerisk-2.0.0\tests\repair_fixtures\typo_review
+copying tests\repair_fixtures\typo_review\left.py -> mergerisk-2.0.0\tests\repair_fixtures\typo_review
+copying tests\repair_fixtures\typo_review\merged.py -> mergerisk-2.0.0\tests\repair_fixtures\typo_review
+copying tests\repair_fixtures\typo_review\right.py -> mergerisk-2.0.0\tests\repair_fixtures\typo_review
+copying tests\scenarios\01_signature_mismatch\base.py -> mergerisk-2.0.0\tests\scenarios\01_signature_mismatch
+copying tests\scenarios\01_signature_mismatch\expected.json -> mergerisk-2.0.0\tests\scenarios\01_signature_mismatch
+copying tests\scenarios\01_signature_mismatch\left.py -> mergerisk-2.0.0\tests\scenarios\01_signature_mismatch
+copying tests\scenarios\01_signature_mismatch\merged.py -> mergerisk-2.0.0\tests\scenarios\01_signature_mismatch
+copying tests\scenarios\01_signature_mismatch\right.py -> mergerisk-2.0.0\tests\scenarios\01_signature_mismatch
+copying tests\scenarios\02_shared_state_write\base.py -> mergerisk-2.0.0\tests\scenarios\02_shared_state_write
+copying tests\scenarios\02_shared_state_write\expected.json -> mergerisk-2.0.0\tests\scenarios\02_shared_state_write
+copying tests\scenarios\02_shared_state_write\left.py -> mergerisk-2.0.0\tests\scenarios\02_shared_state_write
+copying tests\scenarios\02_shared_state_write\merged.py -> mergerisk-2.0.0\tests\scenarios\02_shared_state_write
+copying tests\scenarios\02_shared_state_write\right.py -> mergerisk-2.0.0\tests\scenarios\02_shared_state_write
+copying tests\scenarios\03_shared_state_read_only_edge_case\base.py -> mergerisk-2.0.0\tests\scenarios\03_shared_state_read_only_edge_case
+copying tests\scenarios\03_shared_state_read_only_edge_case\expected.json -> mergerisk-2.0.0\tests\scenarios\03_shared_state_read_only_edge_case
+copying tests\scenarios\03_shared_state_read_only_edge_case\left.py -> mergerisk-2.0.0\tests\scenarios\03_shared_state_read_only_edge_case
+copying tests\scenarios\03_shared_state_read_only_edge_case\merged.py -> mergerisk-2.0.0\tests\scenarios\03_shared_state_read_only_edge_case
+copying tests\scenarios\03_shared_state_read_only_edge_case\right.py -> mergerisk-2.0.0\tests\scenarios\03_shared_state_read_only_edge_case
+copying tests\scenarios\04_call_dependency\base.py -> mergerisk-2.0.0\tests\scenarios\04_call_dependency
+copying tests\scenarios\04_call_dependency\expected.json -> mergerisk-2.0.0\tests\scenarios\04_call_dependency
+copying tests\scenarios\04_call_dependency\left.py -> mergerisk-2.0.0\tests\scenarios\04_call_dependency
+copying tests\scenarios\04_call_dependency\merged.py -> mergerisk-2.0.0\tests\scenarios\04_call_dependency
+copying tests\scenarios\04_call_dependency\right.py -> mergerisk-2.0.0\tests\scenarios\04_call_dependency
+copying tests\scenarios\05_duplicate_addition\base.py -> mergerisk-2.0.0\tests\scenarios\05_duplicate_addition
+copying tests\scenarios\05_duplicate_addition\expected.json -> mergerisk-2.0.0\tests\scenarios\05_duplicate_addition
+copying tests\scenarios\05_duplicate_addition\left.py -> mergerisk-2.0.0\tests\scenarios\05_duplicate_addition
+copying tests\scenarios\05_duplicate_addition\merged.py -> mergerisk-2.0.0\tests\scenarios\05_duplicate_addition
+copying tests\scenarios\05_duplicate_addition\right.py -> mergerisk-2.0.0\tests\scenarios\05_duplicate_addition
+copying tests\scenarios\06_deleted_dependency\base.py -> mergerisk-2.0.0\tests\scenarios\06_deleted_dependency
+copying tests\scenarios\06_deleted_dependency\expected.json -> mergerisk-2.0.0\tests\scenarios\06_deleted_dependency
+copying tests\scenarios\06_deleted_dependency\left.py -> mergerisk-2.0.0\tests\scenarios\06_deleted_dependency
+copying tests\scenarios\06_deleted_dependency\merged.py -> mergerisk-2.0.0\tests\scenarios\06_deleted_dependency
+copying tests\scenarios\06_deleted_dependency\right.py -> mergerisk-2.0.0\tests\scenarios\06_deleted_dependency
+copying tests\scenarios\07_same_entity_changed\base.py -> mergerisk-2.0.0\tests\scenarios\07_same_entity_changed
+copying tests\scenarios\07_same_entity_changed\expected.json -> mergerisk-2.0.0\tests\scenarios\07_same_entity_changed
+copying tests\scenarios\07_same_entity_changed\left.py -> mergerisk-2.0.0\tests\scenarios\07_same_entity_changed
+copying tests\scenarios\07_same_entity_changed\merged.py -> mergerisk-2.0.0\tests\scenarios\07_same_entity_changed
+copying tests\scenarios\07_same_entity_changed\right.py -> mergerisk-2.0.0\tests\scenarios\07_same_entity_changed
+copying tests\scenarios\08_true_negative_unrelated\base.py -> mergerisk-2.0.0\tests\scenarios\08_true_negative_unrelated
+copying tests\scenarios\08_true_negative_unrelated\expected.json -> mergerisk-2.0.0\tests\scenarios\08_true_negative_unrelated
+copying tests\scenarios\08_true_negative_unrelated\left.py -> mergerisk-2.0.0\tests\scenarios\08_true_negative_unrelated
+copying tests\scenarios\08_true_negative_unrelated\merged.py -> mergerisk-2.0.0\tests\scenarios\08_true_negative_unrelated
+copying tests\scenarios\08_true_negative_unrelated\right.py -> mergerisk-2.0.0\tests\scenarios\08_true_negative_unrelated
+copying tests\scenarios\09_true_negative_common_helper\base.py -> mergerisk-2.0.0\tests\scenarios\09_true_negative_common_helper
+copying tests\scenarios\09_true_negative_common_helper\expected.json -> mergerisk-2.0.0\tests\scenarios\09_true_negative_common_helper
+copying tests\scenarios\09_true_negative_common_helper\left.py -> mergerisk-2.0.0\tests\scenarios\09_true_negative_common_helper
+copying tests\scenarios\09_true_negative_common_helper\merged.py -> mergerisk-2.0.0\tests\scenarios\09_true_negative_common_helper
+copying tests\scenarios\09_true_negative_common_helper\right.py -> mergerisk-2.0.0\tests\scenarios\09_true_negative_common_helper
+copying tests\scenarios\10_both_delete_same_function_safe\base.py -> mergerisk-2.0.0\tests\scenarios\10_both_delete_same_function_safe
+copying tests\scenarios\10_both_delete_same_function_safe\expected.json -> mergerisk-2.0.0\tests\scenarios\10_both_delete_same_function_safe
+copying tests\scenarios\10_both_delete_same_function_safe\left.py -> mergerisk-2.0.0\tests\scenarios\10_both_delete_same_function_safe
+copying tests\scenarios\10_both_delete_same_function_safe\merged.py -> mergerisk-2.0.0\tests\scenarios\10_both_delete_same_function_safe
+copying tests\scenarios\10_both_delete_same_function_safe\right.py -> mergerisk-2.0.0\tests\scenarios\10_both_delete_same_function_safe
+copying tests\scenarios\11_class_method_signature_mismatch\base.py -> mergerisk-2.0.0\tests\scenarios\11_class_method_signature_mismatch
+copying tests\scenarios\11_class_method_signature_mismatch\expected.json -> mergerisk-2.0.0\tests\scenarios\11_class_method_signature_mismatch
+copying tests\scenarios\11_class_method_signature_mismatch\left.py -> mergerisk-2.0.0\tests\scenarios\11_class_method_signature_mismatch
+copying tests\scenarios\11_class_method_signature_mismatch\merged.py -> mergerisk-2.0.0\tests\scenarios\11_class_method_signature_mismatch
+copying tests\scenarios\11_class_method_signature_mismatch\right.py -> mergerisk-2.0.0\tests\scenarios\11_class_method_signature_mismatch
+copying tests\scenarios\12_cosmetic_change_false_positive_trap\base.py -> mergerisk-2.0.0\tests\scenarios\12_cosmetic_change_false_positive_trap
+copying tests\scenarios\12_cosmetic_change_false_positive_trap\expected.json -> mergerisk-2.0.0\tests\scenarios\12_cosmetic_change_false_positive_trap
+copying tests\scenarios\12_cosmetic_change_false_positive_trap\left.py -> mergerisk-2.0.0\tests\scenarios\12_cosmetic_change_false_positive_trap
+copying tests\scenarios\12_cosmetic_change_false_positive_trap\merged.py -> mergerisk-2.0.0\tests\scenarios\12_cosmetic_change_false_positive_trap
+copying tests\scenarios\12_cosmetic_change_false_positive_trap\right.py -> mergerisk-2.0.0\tests\scenarios\12_cosmetic_change_false_positive_trap
+copying tests\scenarios\13_shared_global_write\base.py -> mergerisk-2.0.0\tests\scenarios\13_shared_global_write
+copying tests\scenarios\13_shared_global_write\expected.json -> mergerisk-2.0.0\tests\scenarios\13_shared_global_write
+copying tests\scenarios\13_shared_global_write\left.py -> mergerisk-2.0.0\tests\scenarios\13_shared_global_write
+copying tests\scenarios\13_shared_global_write\merged.py -> mergerisk-2.0.0\tests\scenarios\13_shared_global_write
+copying tests\scenarios\13_shared_global_write\right.py -> mergerisk-2.0.0\tests\scenarios\13_shared_global_write
+copying tests\scenarios\14_shared_global_read_only\base.py -> mergerisk-2.0.0\tests\scenarios\14_shared_global_read_only
+copying tests\scenarios\14_shared_global_read_only\expected.json -> mergerisk-2.0.0\tests\scenarios\14_shared_global_read_only
+copying tests\scenarios\14_shared_global_read_only\left.py -> mergerisk-2.0.0\tests\scenarios\14_shared_global_read_only
+copying tests\scenarios\14_shared_global_read_only\merged.py -> mergerisk-2.0.0\tests\scenarios\14_shared_global_read_only
+copying tests\scenarios\14_shared_global_read_only\right.py -> mergerisk-2.0.0\tests\scenarios\14_shared_global_read_only
+copying tests\scenarios\15_preexisting_shared_global\base.py -> mergerisk-2.0.0\tests\scenarios\15_preexisting_shared_global
+copying tests\scenarios\15_preexisting_shared_global\expected.json -> mergerisk-2.0.0\tests\scenarios\15_preexisting_shared_global
+copying tests\scenarios\15_preexisting_shared_global\left.py -> mergerisk-2.0.0\tests\scenarios\15_preexisting_shared_global
+copying tests\scenarios\15_preexisting_shared_global\merged.py -> mergerisk-2.0.0\tests\scenarios\15_preexisting_shared_global
+copying tests\scenarios\15_preexisting_shared_global\right.py -> mergerisk-2.0.0\tests\scenarios\15_preexisting_shared_global
+copying tests\scenarios\16_global_attribute_mutation_unresolved\base.py -> mergerisk-2.0.0\tests\scenarios\16_global_attribute_mutation_unresolved
+copying tests\scenarios\16_global_attribute_mutation_unresolved\expected.json -> mergerisk-2.0.0\tests\scenarios\16_global_attribute_mutation_unresolved
+copying tests\scenarios\16_global_attribute_mutation_unresolved\left.py -> mergerisk-2.0.0\tests\scenarios\16_global_attribute_mutation_unresolved
+copying tests\scenarios\16_global_attribute_mutation_unresolved\merged.py -> mergerisk-2.0.0\tests\scenarios\16_global_attribute_mutation_unresolved
+copying tests\scenarios\16_global_attribute_mutation_unresolved\right.py -> mergerisk-2.0.0\tests\scenarios\16_global_attribute_mutation_unresolved
+copying tests\scenarios\17_recursive_signature_mismatch\base.py -> mergerisk-2.0.0\tests\scenarios\17_recursive_signature_mismatch
+copying tests\scenarios\17_recursive_signature_mismatch\expected.json -> mergerisk-2.0.0\tests\scenarios\17_recursive_signature_mismatch
+copying tests\scenarios\17_recursive_signature_mismatch\left.py -> mergerisk-2.0.0\tests\scenarios\17_recursive_signature_mismatch
+copying tests\scenarios\17_recursive_signature_mismatch\merged.py -> mergerisk-2.0.0\tests\scenarios\17_recursive_signature_mismatch
+copying tests\scenarios\17_recursive_signature_mismatch\right.py -> mergerisk-2.0.0\tests\scenarios\17_recursive_signature_mismatch
+copying tests\scenarios\scenario_01_signature_change\base.py -> mergerisk-2.0.0\tests\scenarios\scenario_01_signature_change
+copying tests\scenarios\scenario_01_signature_change\expected.json -> mergerisk-2.0.0\tests\scenarios\scenario_01_signature_change
+copying tests\scenarios\scenario_01_signature_change\left.py -> mergerisk-2.0.0\tests\scenarios\scenario_01_signature_change
+copying tests\scenarios\scenario_01_signature_change\merged.py -> mergerisk-2.0.0\tests\scenarios\scenario_01_signature_change
+copying tests\scenarios\scenario_01_signature_change\right.py -> mergerisk-2.0.0\tests\scenarios\scenario_01_signature_change
+copying tests\scenarios\scenario_02_unrelated_additions\base.py -> mergerisk-2.0.0\tests\scenarios\scenario_02_unrelated_additions
+copying tests\scenarios\scenario_02_unrelated_additions\expected.json -> mergerisk-2.0.0\tests\scenarios\scenario_02_unrelated_additions
+copying tests\scenarios\scenario_02_unrelated_additions\left.py -> mergerisk-2.0.0\tests\scenarios\scenario_02_unrelated_additions
+copying tests\scenarios\scenario_02_unrelated_additions\merged.py -> mergerisk-2.0.0\tests\scenarios\scenario_02_unrelated_additions
+copying tests\scenarios\scenario_02_unrelated_additions\right.py -> mergerisk-2.0.0\tests\scenarios\scenario_02_unrelated_additions
+copying tests\scenarios\scenario_03_readonly_shared_global\base.py -> mergerisk-2.0.0\tests\scenarios\scenario_03_readonly_shared_global
+copying tests\scenarios\scenario_03_readonly_shared_global\expected.json -> mergerisk-2.0.0\tests\scenarios\scenario_03_readonly_shared_global
+copying tests\scenarios\scenario_03_readonly_shared_global\left.py -> mergerisk-2.0.0\tests\scenarios\scenario_03_readonly_shared_global
+copying tests\scenarios\scenario_03_readonly_shared_global\merged.py -> mergerisk-2.0.0\tests\scenarios\scenario_03_readonly_shared_global
+copying tests\scenarios\scenario_03_readonly_shared_global\right.py -> mergerisk-2.0.0\tests\scenarios\scenario_03_readonly_shared_global
+copying tests\scenarios\scenario_04_deleted_function\base.py -> mergerisk-2.0.0\tests\scenarios\scenario_04_deleted_function
+copying tests\scenarios\scenario_04_deleted_function\expected.json -> mergerisk-2.0.0\tests\scenarios\scenario_04_deleted_function
+copying tests\scenarios\scenario_04_deleted_function\left.py -> mergerisk-2.0.0\tests\scenarios\scenario_04_deleted_function
+copying tests\scenarios\scenario_04_deleted_function\merged.py -> mergerisk-2.0.0\tests\scenarios\scenario_04_deleted_function
+copying tests\scenarios\scenario_04_deleted_function\right.py -> mergerisk-2.0.0\tests\scenarios\scenario_04_deleted_function
+copying tests\tier_a_scenarios\syntax_error_introduced\base.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_introduced
+copying tests\tier_a_scenarios\syntax_error_introduced\expected.json -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_introduced
+copying tests\tier_a_scenarios\syntax_error_introduced\left.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_introduced
+copying tests\tier_a_scenarios\syntax_error_introduced\merged.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_introduced
+copying tests\tier_a_scenarios\syntax_error_introduced\right.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_introduced
+copying tests\tier_a_scenarios\syntax_error_preexisting\base.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_preexisting
+copying tests\tier_a_scenarios\syntax_error_preexisting\expected.json -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_preexisting
+copying tests\tier_a_scenarios\syntax_error_preexisting\left.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_preexisting
+copying tests\tier_a_scenarios\syntax_error_preexisting\merged.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_preexisting
+copying tests\tier_a_scenarios\syntax_error_preexisting\right.py -> mergerisk-2.0.0\tests\tier_a_scenarios\syntax_error_preexisting
+copying tests\unit\test_analysis_pipeline.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_change_attribution.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_domain_schemas.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_eval_harness.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_evaluator.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_global_state.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_history.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_mechanical.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_repair.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_repository_inventory.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_safety.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_semantic_call_graph.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_tier_a_rules.py -> mergerisk-2.0.0\tests\unit
+copying tests\unit\test_v1_rules_migration.py -> mergerisk-2.0.0\tests\unit
+Writing mergerisk-2.0.0\setup.cfg
+Creating tar archive
+removing 'mergerisk-2.0.0' (and everything under it)
+* Building wheel from sdist
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - setuptools>=68
+* Getting build dependencies for wheel...
+running egg_info
+writing src\mergerisk.egg-info\PKG-INFO
+writing dependency_links to src\mergerisk.egg-info\dependency_links.txt
+writing entry points to src\mergerisk.egg-info\entry_points.txt
+writing requirements to src\mergerisk.egg-info\requires.txt
+writing top-level names to src\mergerisk.egg-info\top_level.txt
+reading manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files found matching 'MergeRisk_report_remade.docx'
+no previously-included directories found matching '.test-runs'
+writing manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+* Installed build dependency versions:
+  - setuptools==84.2.1
+* Building wheel...
+running bdist_wheel
+running build
+running build_py
+creating build\lib\detector
+copying detector\change_extractor.py -> build\lib\detector
+copying detector\entity_extractor.py -> build\lib\detector
+copying detector\interaction_analyzer.py -> build\lib\detector
+copying detector\report.py -> build\lib\detector
+copying detector\risk_classifier.py -> build\lib\detector
+copying detector\__init__.py -> build\lib\detector
+creating build\lib\mergerisk
+copying src\mergerisk\cli.py -> build\lib\mergerisk
+copying src\mergerisk\dashboard.py -> build\lib\mergerisk
+copying src\mergerisk\history.py -> build\lib\mergerisk
+copying src\mergerisk\repair.py -> build\lib\mergerisk
+copying src\mergerisk\sample.py -> build\lib\mergerisk
+copying src\mergerisk\service.py -> build\lib\mergerisk
+copying src\mergerisk\verification.py -> build\lib\mergerisk
+copying src\mergerisk\__init__.py -> build\lib\mergerisk
+copying src\mergerisk\__main__.py -> build\lib\mergerisk
+creating build\lib\mergerisk\analysis
+copying src\mergerisk\analysis\changes.py -> build\lib\mergerisk\analysis
+copying src\mergerisk\analysis\inventory.py -> build\lib\mergerisk\analysis
+copying src\mergerisk\analysis\pipeline.py -> build\lib\mergerisk\analysis
+copying src\mergerisk\analysis\__init__.py -> build\lib\mergerisk\analysis
+creating build\lib\mergerisk\domain
+copying src\mergerisk\domain\findings.py -> build\lib\mergerisk\domain
+copying src\mergerisk\domain\results.py -> build\lib\mergerisk\domain
+copying src\mergerisk\domain\revisions.py -> build\lib\mergerisk\domain
+copying src\mergerisk\domain\__init__.py -> build\lib\mergerisk\domain
+creating build\lib\mergerisk\eval
+copying src\mergerisk\eval\matcher.py -> build\lib\mergerisk\eval
+copying src\mergerisk\eval\metrics.py -> build\lib\mergerisk\eval
+copying src\mergerisk\eval\__init__.py -> build\lib\mergerisk\eval
+creating build\lib\mergerisk\git
+copying src\mergerisk\git\plumbing.py -> build\lib\mergerisk\git
+copying src\mergerisk\git\scenario.py -> build\lib\mergerisk\git
+copying src\mergerisk\git\snapshot.py -> build\lib\mergerisk\git
+copying src\mergerisk\git\__init__.py -> build\lib\mergerisk\git
+creating build\lib\mergerisk\reporting
+copying src\mergerisk\reporting\summary.py -> build\lib\mergerisk\reporting
+copying src\mergerisk\reporting\__init__.py -> build\lib\mergerisk\reporting
+creating build\lib\mergerisk\rules
+copying src\mergerisk\rules\base.py -> build\lib\mergerisk\rules
+copying src\mergerisk\rules\catalog.py -> build\lib\mergerisk\rules
+copying src\mergerisk\rules\mechanical.py -> build\lib\mergerisk\rules
+copying src\mergerisk\rules\tier_a.py -> build\lib\mergerisk\rules
+copying src\mergerisk\rules\v1_rules.py -> build\lib\mergerisk\rules
+copying src\mergerisk\rules\__init__.py -> build\lib\mergerisk\rules
+creating build\lib\mergerisk\semantic
+copying src\mergerisk\semantic\call_graph.py -> build\lib\mergerisk\semantic
+copying src\mergerisk\semantic\global_state.py -> build\lib\mergerisk\semantic
+copying src\mergerisk\semantic\imports.py -> build\lib\mergerisk\semantic
+copying src\mergerisk\semantic\python_adapter.py -> build\lib\mergerisk\semantic
+copying src\mergerisk\semantic\symbols.py -> build\lib\mergerisk\semantic
+copying src\mergerisk\semantic\__init__.py -> build\lib\mergerisk\semantic
+creating build\lib\mergerisk\templates
+copying src\mergerisk\templates\base.html -> build\lib\mergerisk\templates
+copying src\mergerisk\templates\history.html -> build\lib\mergerisk\templates
+copying src\mergerisk\templates\learn.html -> build\lib\mergerisk\templates
+copying src\mergerisk\templates\new.html -> build\lib\mergerisk\templates
+copying src\mergerisk\templates\repositories.html -> build\lib\mergerisk\templates
+copying src\mergerisk\templates\result.html -> build\lib\mergerisk\templates
+copying src\mergerisk\templates\settings.html -> build\lib\mergerisk\templates
+creating build\lib\mergerisk\static
+copying src\mergerisk\static\app.css -> build\lib\mergerisk\static
+copying src\mergerisk\static\app.js -> build\lib\mergerisk\static
+installing to build\bdist.win-amd64\wheel
+running install
+running install_lib
+creating build\bdist.win-amd64\wheel
+creating build\bdist.win-amd64\wheel\detector
+copying build\lib\detector\change_extractor.py -> build\bdist.win-amd64\wheel\.\detector
+copying build\lib\detector\entity_extractor.py -> build\bdist.win-amd64\wheel\.\detector
+copying build\lib\detector\interaction_analyzer.py -> build\bdist.win-amd64\wheel\.\detector
+copying build\lib\detector\report.py -> build\bdist.win-amd64\wheel\.\detector
+copying build\lib\detector\risk_classifier.py -> build\bdist.win-amd64\wheel\.\detector
+copying build\lib\detector\__init__.py -> build\bdist.win-amd64\wheel\.\detector
+creating build\bdist.win-amd64\wheel\mergerisk
+creating build\bdist.win-amd64\wheel\mergerisk\analysis
+copying build\lib\mergerisk\analysis\changes.py -> build\bdist.win-amd64\wheel\.\mergerisk\analysis
+copying build\lib\mergerisk\analysis\inventory.py -> build\bdist.win-amd64\wheel\.\mergerisk\analysis
+copying build\lib\mergerisk\analysis\pipeline.py -> build\bdist.win-amd64\wheel\.\mergerisk\analysis
+copying build\lib\mergerisk\analysis\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk\analysis
+copying build\lib\mergerisk\cli.py -> build\bdist.win-amd64\wheel\.\mergerisk
+copying build\lib\mergerisk\dashboard.py -> build\bdist.win-amd64\wheel\.\mergerisk
+creating build\bdist.win-amd64\wheel\mergerisk\domain
+copying build\lib\mergerisk\domain\findings.py -> build\bdist.win-amd64\wheel\.\mergerisk\domain
+copying build\lib\mergerisk\domain\results.py -> build\bdist.win-amd64\wheel\.\mergerisk\domain
+copying build\lib\mergerisk\domain\revisions.py -> build\bdist.win-amd64\wheel\.\mergerisk\domain
+copying build\lib\mergerisk\domain\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk\domain
+creating build\bdist.win-amd64\wheel\mergerisk\eval
+copying build\lib\mergerisk\eval\matcher.py -> build\bdist.win-amd64\wheel\.\mergerisk\eval
+copying build\lib\mergerisk\eval\metrics.py -> build\bdist.win-amd64\wheel\.\mergerisk\eval
+copying build\lib\mergerisk\eval\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk\eval
+creating build\bdist.win-amd64\wheel\mergerisk\git
+copying build\lib\mergerisk\git\plumbing.py -> build\bdist.win-amd64\wheel\.\mergerisk\git
+copying build\lib\mergerisk\git\scenario.py -> build\bdist.win-amd64\wheel\.\mergerisk\git
+copying build\lib\mergerisk\git\snapshot.py -> build\bdist.win-amd64\wheel\.\mergerisk\git
+copying build\lib\mergerisk\git\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk\git
+copying build\lib\mergerisk\history.py -> build\bdist.win-amd64\wheel\.\mergerisk
+copying build\lib\mergerisk\repair.py -> build\bdist.win-amd64\wheel\.\mergerisk
+creating build\bdist.win-amd64\wheel\mergerisk\reporting
+copying build\lib\mergerisk\reporting\summary.py -> build\bdist.win-amd64\wheel\.\mergerisk\reporting
+copying build\lib\mergerisk\reporting\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk\reporting
+creating build\bdist.win-amd64\wheel\mergerisk\rules
+copying build\lib\mergerisk\rules\base.py -> build\bdist.win-amd64\wheel\.\mergerisk\rules
+copying build\lib\mergerisk\rules\catalog.py -> build\bdist.win-amd64\wheel\.\mergerisk\rules
+copying build\lib\mergerisk\rules\mechanical.py -> build\bdist.win-amd64\wheel\.\mergerisk\rules
+copying build\lib\mergerisk\rules\tier_a.py -> build\bdist.win-amd64\wheel\.\mergerisk\rules
+copying build\lib\mergerisk\rules\v1_rules.py -> build\bdist.win-amd64\wheel\.\mergerisk\rules
+copying build\lib\mergerisk\rules\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk\rules
+copying build\lib\mergerisk\sample.py -> build\bdist.win-amd64\wheel\.\mergerisk
+creating build\bdist.win-amd64\wheel\mergerisk\semantic
+copying build\lib\mergerisk\semantic\call_graph.py -> build\bdist.win-amd64\wheel\.\mergerisk\semantic
+copying build\lib\mergerisk\semantic\global_state.py -> build\bdist.win-amd64\wheel\.\mergerisk\semantic
+copying build\lib\mergerisk\semantic\imports.py -> build\bdist.win-amd64\wheel\.\mergerisk\semantic
+copying build\lib\mergerisk\semantic\python_adapter.py -> build\bdist.win-amd64\wheel\.\mergerisk\semantic
+copying build\lib\mergerisk\semantic\symbols.py -> build\bdist.win-amd64\wheel\.\mergerisk\semantic
+copying build\lib\mergerisk\semantic\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk\semantic
+copying build\lib\mergerisk\service.py -> build\bdist.win-amd64\wheel\.\mergerisk
+creating build\bdist.win-amd64\wheel\mergerisk\static
+copying build\lib\mergerisk\static\app.css -> build\bdist.win-amd64\wheel\.\mergerisk\static
+copying build\lib\mergerisk\static\app.js -> build\bdist.win-amd64\wheel\.\mergerisk\static
+creating build\bdist.win-amd64\wheel\mergerisk\templates
+copying build\lib\mergerisk\templates\base.html -> build\bdist.win-amd64\wheel\.\mergerisk\templates
+copying build\lib\mergerisk\templates\history.html -> build\bdist.win-amd64\wheel\.\mergerisk\templates
+copying build\lib\mergerisk\templates\learn.html -> build\bdist.win-amd64\wheel\.\mergerisk\templates
+copying build\lib\mergerisk\templates\new.html -> build\bdist.win-amd64\wheel\.\mergerisk\templates
+copying build\lib\mergerisk\templates\repositories.html -> build\bdist.win-amd64\wheel\.\mergerisk\templates
+copying build\lib\mergerisk\templates\result.html -> build\bdist.win-amd64\wheel\.\mergerisk\templates
+copying build\lib\mergerisk\templates\settings.html -> build\bdist.win-amd64\wheel\.\mergerisk\templates
+copying build\lib\mergerisk\verification.py -> build\bdist.win-amd64\wheel\.\mergerisk
+copying build\lib\mergerisk\__init__.py -> build\bdist.win-amd64\wheel\.\mergerisk
+copying build\lib\mergerisk\__main__.py -> build\bdist.win-amd64\wheel\.\mergerisk
+running install_egg_info
+running egg_info
+writing src\mergerisk.egg-info\PKG-INFO
+writing dependency_links to src\mergerisk.egg-info\dependency_links.txt
+writing entry points to src\mergerisk.egg-info\entry_points.txt
+writing requirements to src\mergerisk.egg-info\requires.txt
+writing top-level names to src\mergerisk.egg-info\top_level.txt
+reading manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files found matching 'MergeRisk_report_remade.docx'
+no previously-included directories found matching '.test-runs'
+writing manifest file 'src\mergerisk.egg-info\SOURCES.txt'
+Copying src\mergerisk.egg-info to build\bdist.win-amd64\wheel\.\mergerisk-2.0.0-py3.13.egg-info
+running install_scripts
+creating build\bdist.win-amd64\wheel\mergerisk-2.0.0.dist-info\WHEEL
+creating 'C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\dist\\.tmp-5e24aw3n\\mergerisk-2.0.0-py3-none-any.whl' and adding 'build\\bdist.win-amd64\\wheel' to it
+adding 'detector/__init__.py'
+adding 'detector/change_extractor.py'
+adding 'detector/entity_extractor.py'
+adding 'detector/interaction_analyzer.py'
+adding 'detector/report.py'
+adding 'detector/risk_classifier.py'
+adding 'mergerisk/__init__.py'
+adding 'mergerisk/__main__.py'
+adding 'mergerisk/cli.py'
+adding 'mergerisk/dashboard.py'
+adding 'mergerisk/history.py'
+adding 'mergerisk/repair.py'
+adding 'mergerisk/sample.py'
+adding 'mergerisk/service.py'
+adding 'mergerisk/verification.py'
+adding 'mergerisk/analysis/__init__.py'
+adding 'mergerisk/analysis/changes.py'
+adding 'mergerisk/analysis/inventory.py'
+adding 'mergerisk/analysis/pipeline.py'
+adding 'mergerisk/domain/__init__.py'
+adding 'mergerisk/domain/findings.py'
+adding 'mergerisk/domain/results.py'
+adding 'mergerisk/domain/revisions.py'
+adding 'mergerisk/eval/__init__.py'
+adding 'mergerisk/eval/matcher.py'
+adding 'mergerisk/eval/metrics.py'
+adding 'mergerisk/git/__init__.py'
+adding 'mergerisk/git/plumbing.py'
+adding 'mergerisk/git/scenario.py'
+adding 'mergerisk/git/snapshot.py'
+adding 'mergerisk/reporting/__init__.py'
+adding 'mergerisk/reporting/summary.py'
+adding 'mergerisk/rules/__init__.py'
+adding 'mergerisk/rules/base.py'
+adding 'mergerisk/rules/catalog.py'
+adding 'mergerisk/rules/mechanical.py'
+adding 'mergerisk/rules/tier_a.py'
+adding 'mergerisk/rules/v1_rules.py'
+adding 'mergerisk/semantic/__init__.py'
+adding 'mergerisk/semantic/call_graph.py'
+adding 'mergerisk/semantic/global_state.py'
+adding 'mergerisk/semantic/imports.py'
+adding 'mergerisk/semantic/python_adapter.py'
+adding 'mergerisk/semantic/symbols.py'
+adding 'mergerisk/static/app.css'
+adding 'mergerisk/static/app.js'
+adding 'mergerisk/templates/base.html'
+adding 'mergerisk/templates/history.html'
+adding 'mergerisk/templates/learn.html'
+adding 'mergerisk/templates/new.html'
+adding 'mergerisk/templates/repositories.html'
+adding 'mergerisk/templates/result.html'
+adding 'mergerisk/templates/settings.html'
+adding 'mergerisk-2.0.0.dist-info/METADATA'
+adding 'mergerisk-2.0.0.dist-info/WHEEL'
+adding 'mergerisk-2.0.0.dist-info/entry_points.txt'
+adding 'mergerisk-2.0.0.dist-info/top_level.txt'
+adding 'mergerisk-2.0.0.dist-info/RECORD'
+removing build\bdist.win-amd64\wheel
+Successfully built mergerisk-2.0.0.tar.gz and mergerisk-2.0.0-py3-none-any.whl

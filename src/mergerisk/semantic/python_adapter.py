@@ -50,9 +50,15 @@ class PythonModel:
         return {(r.scope, r.name) for r in self.references if r.missing}
 
 
-@lru_cache(maxsize=1024)
+@lru_cache(maxsize=256)
+def parse_python(source: str, path: str) -> ast.Module:
+    compile(source, path, "exec")  # Validate compiler scope errors too; never execute the code object.
+    return ast.parse(source, filename=path)
+
+
+@lru_cache(maxsize=256)
 def inspect_python(source: str, path: str) -> PythonModel:
-    tree = ast.parse(source, filename=path)
+    tree = parse_python(source, path)
     table = symtable.symtable(source, path, "exec")
     bound = {s.get_name() for s in table.get_symbols() if s.is_assigned() or s.is_imported() or s.is_namespace()}
     visitor = _References(table, bound)

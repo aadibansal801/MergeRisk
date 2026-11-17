@@ -98,7 +98,7 @@ def apply_edits(data: bytes, plan: RepairPlan, tree: str) -> bytes:
     return data
 
 
-def _import_edit(issue: MechanicalIssue, data: bytes) -> tuple[tuple[TextEdit, ...], str]:
+def _import_edit(issue: MechanicalIssue, data: bytes, sources) -> tuple[tuple[TextEdit, ...], str]:
     site = issue.import_site
     if not site or not issue.parent_source or site.scope != "<module>" or site.conditional:
         return (), "Import placement is conditional or local; runtime context is required."
@@ -108,6 +108,22 @@ def _import_edit(issue: MechanicalIssue, data: bytes) -> tuple[tuple[TextEdit, .
     merged = inspect_python(decode_source(data), issue.path)
     if parent.limitations or merged.limitations:
         return (), "Dynamic or unsupported scope prevents automatic restoration."
+    resolver = ImportResolver(set(sources["merge"]))
+    target = (site.node.names[0].name if isinstance(site.node, ast.Import) else
+              resolver._absolute_from_module(issue.path, site.node.module or "", site.node.level))
+    root = target.split(".")[0]
+    local = {role: {resolver.module_name(p): p for p in files}
+             for role, files in sources.items()}
+    was_local = any(m == root or m.startswith(root + ".") for m in local["base"])
+    now_local = any(m == root or m.startswith(root + ".") for m in local["merge"])
+    if was_local != now_local:
+        return (), "The import changed between external and project-local resolution."
+    if was_local:
+        if target not in local["merge"]:
+            return (), "The historical project module no longer resolves uniquely."
+        target_path = local["merge"][target]
+        if inspect_python(sources["merge"][target_path], target_path).limitations:
+            return (), "The project import target has unsupported namespace effects."
 
     def prologue(tree):
         nodes = list(tree.body)
@@ -171,9 +187,16 @@ def propose(versions: dict[str, dict[str, bytes]], context: RevisionContext, ana
         data = versions["merge"].get(path, b"")
         edits, reason, level = (), "No unique mechanical repair; changing the contract requires human judgment.", "REPORT_ONLY"
         if issue and issue.import_site:
-            edits, reason = _import_edit(issue, data)
+            try:
+                edits, reason = _import_edit(issue, data, sources)
+            except (ValueError, SyntaxError, RecursionError) as error:
+                edits, reason = (), f"Import evidence cannot support an exact, parseable edit: {error}"
             if edits:
                 level = "AUTO"
+        elif finding.rule_id == "MR-PY-SIG-002":
+            edits = _keyword_edits(finding, path, data, sources)
+            if edits:
+                level, reason = "AUTO", "One history-proven parameter alpha-rename; only the keyword label changes, preserving the argument expression byte-for-byte."
         elif issue and issue.replacement and issue.reference:
             model = inspect_python(decode_source(data), path)
             refs = [r for r in model.references if r.missing and r.name == issue.reference.name and r.scope == issue.reference.scope]
@@ -192,6 +215,68 @@ def propose(versions: dict[str, dict[str, bytes]], context: RevisionContext, ana
             plan = replace(plan, diff=diff)
         plans.append(plan)
     return plans
+
+
+def _keyword_edits(finding, path, data, sources):
+    target = next((e.symbol for e in finding.entities if e.role == "changed_signature"), None)
+    caller = next((e.symbol for e in finding.entities if e.role == "affected_call_site"), None)
+    definition_path = finding.locations[0].path
+    try:
+        models = {r: inspect_python(files[definition_path], definition_path) for r, files in sources.items()}
+        if any(m.limitations for m in models.values()) or inspect_python(decode_source(data), path).limitations:
+            return ()
+        functions = {r: _function_nodes(m.source, definition_path).get(target) for r, m in models.items()}
+        if any(n is None or n.decorator_list or n.col_offset != 0 for n in functions.values()):
+            return ()
+        base = functions["base"]
+        pairs = []
+        for changing, using in (("left", "right"), ("right", "left")):
+            after = functions[changing]
+            if (ast.dump(functions[using]) != ast.dump(base) or ast.dump(functions["merge"]) != ast.dump(after)
+                    or base.args.vararg or base.args.kwarg or after.args.vararg or after.args.kwarg):
+                continue
+            before_args = [*base.args.args, *base.args.kwonlyargs]
+            after_args = [*after.args.args, *after.args.kwonlyargs]
+            if len(before_args) != len(after_args):
+                continue
+            differences = [(a.arg, b.arg) for a, b in zip(before_args, after_args) if a.arg != b.arg]
+            if len(differences) != 1:
+                continue
+            old, new = differences[0]
+            if (any(isinstance(n, ast.Name) and n.id == new for statement in base.body for n in ast.walk(statement))
+                    or any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda, ast.Import, ast.ImportFrom,
+                                          ast.Global, ast.Nonlocal, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))
+                           for statement in base.body for n in ast.walk(statement))):
+                continue
+            normalized = copy.deepcopy(base)
+            for arg in (*normalized.args.args, *normalized.args.kwonlyargs):
+                if arg.arg == old:
+                    arg.arg = new
+            for statement in normalized.body:
+                for node in ast.walk(statement):
+                    if isinstance(node, ast.Name) and node.id == old:
+                        node.id = new
+            if ast.dump(normalized) == ast.dump(after):
+                pairs.append((old, new))
+        if len(pairs) != 1:
+            return ()
+        old, new = pairs[0]
+        edits = []
+        encoding = source_encoding(data).replace("utf-8-sig", "utf-8")
+        for call in CallGraphBuilder().build_from_sources(sources["merge"]):
+            if (call.file_path != path or call.caller_symbol != caller or not call.resolved_target
+                    or call.resolved_target.qualified_name != target or call.has_star_args or call.has_star_kwargs):
+                continue
+            node = _call_node(call, decode_source(data))
+            if any(k.arg == new for k in node.keywords):
+                return ()
+            for keyword in node.keywords:
+                if keyword.arg == old:
+                    start = byte_offset(data, keyword.lineno, keyword.col_offset)
+                    edits.append(TextEdit(start, start + len(old.encode(encoding)), old.encode(encoding), new.encode(encoding)))
+        return tuple(edits)
+    except (KeyError, SyntaxError, ValueError):
+        return ()
 
 
 def text_versions(versions):
@@ -279,16 +364,26 @@ def repair_candidate(versions, context, analysis, accepted: set[str] | None = No
             after = apply_edits(before, combined, context.merge_tree)
             old_tree, new_tree = ast.parse(decode_source(before)), ast.parse(decode_source(after))
             if all(p.tier == "AUTO" for p in group):
-                # AUTO may add only the exact evidence-backed imports; no other AST edit is allowed.
-                added = [ast.parse(e.after.decode(source_encoding(before).replace("utf-8-sig", "utf-8"))).body[0] for p in group for e in p.edits]
+                # AUTO may add historical imports or change proven keyword labels, never expressions.
+                codec = source_encoding(before).replace("utf-8-sig", "utf-8")
+                added = [ast.parse(e.after.decode(codec)).body[0] for p in group if p.rule_id == "MR-PY-IMPORT-001" for e in p.edits]
                 expected = copy.deepcopy(new_tree)
                 for node in added:
                     index = next((i for i, n in enumerate(expected.body) if ast.dump(n) == ast.dump(node)), None)
                     if index is None:
                         raise ValueError("AST import whitelist failed")
                     expected.body.pop(index)
+                for p in group:
+                    if p.rule_id != "MR-PY-SIG-002":
+                        continue
+                    for edit in p.edits:
+                        keyword = next((n for n in ast.walk(old_tree) if isinstance(n, ast.keyword)
+                                        and byte_offset(before, n.lineno, n.col_offset) == edit.start), None)
+                        if keyword is None or keyword.arg.encode(codec) != edit.before:
+                            raise ValueError("Keyword edit is outside its proven argument label")
+                        keyword.arg = edit.after.decode(codec)
                 if ast.dump(expected) != ast.dump(old_tree):
-                    raise ValueError("Repair changes code outside allowed import sites")
+                    raise ValueError("Repair changes code outside allowed mechanical sites")
             candidate[path] = after
         sources = text_versions(versions)
         fixed_text = text_versions({"merge": candidate})["merge"]

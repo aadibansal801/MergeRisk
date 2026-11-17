@@ -30,16 +30,21 @@ def evaluate():
         changed = repair.candidate != versions["merge"]
         correct = repair.candidate["app.py"] == (root / "expected_fixed.py").read_bytes() if expected["auto"] else not changed
         rows.append({"case": root.name, "expects_auto": expected["auto"], "changed": changed,
-                     "correct": correct, "status": result.status.value, "validation": repair.validation})
+                     "category": expected.get("category", "repair" if expected["auto"] else "refusal"),
+                     "correct": correct, "status": result.status.value, "validation": repair.validation,
+                     "unresolved_references": result.coverage.unresolved_references,
+                     "dynamic_constructs": result.coverage.dynamic_constructs_encountered})
     for v in counts.values():
         v["precision"] = v["tp"] / (v["tp"] + v["fp"]) if v["tp"] + v["fp"] else None
         v["recall"] = v["tp"] / (v["tp"] + v["fn"]) if v["tp"] + v["fn"] else None
     positive = [r for r in rows if r["expects_auto"]]
-    negative = [r for r in rows if not r["expects_auto"]]
+    negative = [r for r in rows if r["category"] == "refusal"]
     return {"scope": "Small authored Python corpus; no universal correctness guarantee.", "cases": rows,
             "correct_fix_rate": sum(r["correct"] for r in positive) / len(positive),
             "false_fix_rate": sum(r["changed"] and not r["correct"] for r in rows) / len(rows),
             "correct_refusal_rate": sum(r["correct"] for r in negative) / len(negative),
+            "auto_denominator": len(positive), "refusal_denominator": len(negative),
+            "clean_controls": sum(r["category"] == "clean" for r in rows),
             "partial_analyses": sum(r["status"] == "partial" for r in rows), "rules": counts}
 
 

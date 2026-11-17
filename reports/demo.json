@@ -1,16 +1,16 @@
 {
   "artifact": {
     "applied": true,
-    "commit": "b80d73726fc0ab0138f3eb8858ffdc828a0ca8a5",
+    "commit": "284bfc03f4a0a2e81d77c5a77aab823a8aa7f7e6",
     "next_steps": [
-      "git show refs/mergerisk/c39263d78c2944f09a7cebedfc10cbc7",
-      "git merge --ff-only refs/mergerisk/c39263d78c2944f09a7cebedfc10cbc7"
+      "git show refs/mergerisk/789fdea7959946aba130cc8de1f2f08e",
+      "git merge --ff-only refs/mergerisk/789fdea7959946aba130cc8de1f2f08e"
     ],
     "parents": [
-      "a4ce320df538309ab46e67a3156928e247c2bc3f",
-      "15f284f440d05ed7f40fe44501e352b89ce02b14"
+      "6f91b673cb283d3aeb0becd4db7324a3ffb8cd5d",
+      "6fda62d0a6f2827564c648b5e41d1f5d4ec822d7"
     ],
-    "ref": "refs/mergerisk/c39263d78c2944f09a7cebedfc10cbc7",
+    "ref": "refs/mergerisk/789fdea7959946aba130cc8de1f2f08e",
     "tree": "a86996132470d865452abcab7befb130c1d578f0"
   },
   "repair": {
@@ -33,14 +33,14 @@
     "tier": "AUTO",
     "tree": "6e1cb16399f72178ea0de04444c3b01205a80c18"
   },
-  "repository": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\release-demo\\safe",
+  "repository": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\final-demo\\safe",
   "revisions": {
-    "base": "78e0b562397e5fd3cd2b9aa2986f0118ca113108",
-    "left": "a4ce320df538309ab46e67a3156928e247c2bc3f",
-    "right": "15f284f440d05ed7f40fe44501e352b89ce02b14"
+    "base": "7896f9f4ed715475f954bb4ed38bb1889562defd",
+    "left": "6f91b673cb283d3aeb0becd4db7324a3ffb8cd5d",
+    "right": "6fda62d0a6f2827564c648b5e41d1f5d4ec822d7"
   },
   "runtime_scope": "Only the known-safe built-in sample was executed.",
   "sample_app_passed": true,
   "unsafe_refusal": "Unresolved blocking findings or invalid repairs; merge commit refused",
-  "unsafe_repository": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\release-demo\\unsafe"
+  "unsafe_repository": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\final-demo\\unsafe"
 }

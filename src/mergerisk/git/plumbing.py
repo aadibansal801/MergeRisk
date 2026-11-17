@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import queue
 from pathlib import Path, PurePosixPath
 import subprocess
 import tempfile
@@ -10,7 +11,7 @@ import threading
 
 def environment(overrides=None):
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
-    env.update({"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_TERMINAL_PROMPT": "0"})
+    env.update({"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_TERMINAL_PROMPT": "0", "GIT_NO_REPLACE_OBJECTS": "1"})
     env.update(overrides or {})
     return env
 
@@ -55,6 +56,7 @@ def bounded_run(argv, *, data: bytes = b"", env=None, timeout=30, limit=64 * 102
 def run_git(repo: Path, args, *, data=b"", env=None, check=True, config=()):
     result = bounded_run(["git", "-c", f"core.hooksPath={os.devnull}", "-c", "core.fsmonitor=false",
                           "-c", f"core.attributesFile={os.devnull}", "-c", "core.quotePath=false",
+                          "-c", "merge.verifySignatures=false", "-c", "commit.gpgSign=false",
                           *(part for item in config for part in ("-c", item)), "-C", str(repo), *args],
                          data=data, env=environment(env))
     if check and result.returncode:
@@ -62,12 +64,27 @@ def run_git(repo: Path, args, *, data=b"", env=None, check=True, config=()):
     return result
 
 
+def git_identity(repo: Path):
+    # Read only identity values from normal Git config; never use that config to execute an operation.
+    env = environment()
+    env.pop("GIT_CONFIG_GLOBAL", None)
+    values = {}
+    for field in ("name", "email"):
+        result = bounded_run(["git", "-C", str(repo), "config", "--includes", "--get", "user." + field], env=env, limit=16384)
+        value = result.stdout.decode("utf-8", "strict").strip()
+        if result.returncode or not value or any(c in value for c in "\0\r\n"):
+            raise ValueError("Git author identity is missing or invalid. Configure git user.name and user.email before creating a commit.")
+        values["GIT_AUTHOR_" + field.upper()] = value
+        values["GIT_COMMITTER_" + field.upper()] = value
+    return values
+
+
 def validate_path(path: str):
     normalized = path.replace("\\", "/")
     parts = normalized.split("/")
     if (not path or path != normalized or PurePosixPath(path).is_absolute()
-            or any(p in {"", ".", "..", ".git"} for p in parts)
-            or ":" in parts[0] or "\0" in path):
+            or any(p in {"", ".", ".."} or p.rstrip(" .").casefold() == ".git" for p in parts)
+            or any(c in path for c in "\0\r\n:")):
         raise ValueError("Unsafe repository-relative path")
 
 
@@ -114,3 +131,66 @@ def read_blobs(repo, oids):
     if offset != len(output):
         raise RuntimeError("Malformed Git batch response")
     return result
+
+
+class PreparedRefUpdate:
+    """Hold Git's compare-and-swap branch lock while a checked checkout is updated."""
+    def __init__(self, repo: Path, branch: str, new: str, old: str):
+        if not branch.startswith("refs/heads/") or any(c in branch for c in "\0\n\r "):
+            raise ValueError("Expected a full local branch reference")
+        self.repo, self.branch, self.new, self.old = repo, branch, new, old
+        self.process = None
+        self.lines = queue.Queue(maxsize=8)
+        self.committed = False
+        self.reader = None
+
+    def _send(self, command, expected):
+        self.process.stdin.write((command + "\n").encode("utf-8"))
+        self.process.stdin.flush()
+        try:
+            line = self.lines.get(timeout=10)
+        except queue.Empty as error:
+            raise RuntimeError("Git reference transaction timed out") from error
+        if line.strip() != expected:
+            raise RuntimeError("Git refused the expected branch update; references are stale or locked")
+
+    def __enter__(self):
+        self.process = subprocess.Popen(["git", "-c", f"core.hooksPath={os.devnull}", "-C", str(self.repo),
+                                         "update-ref", "-m", "MergeRisk checked fast-forward", "--stdin"], stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=environment(), bufsize=0)
+
+        def read():
+            while line := self.process.stdout.readline(4096):
+                self.lines.put(line)
+            self.lines.put(b"")
+        self.reader = threading.Thread(target=read, daemon=True)
+        self.reader.start()
+        try:
+            self._send("start", b"start: ok")
+            self.process.stdin.write(f"update {self.branch} {self.new} {self.old}\n".encode())
+            self._send("prepare", b"prepare: ok")
+        except BaseException:
+            self.__exit__(None, None, None)
+            raise
+        return self
+
+    def commit(self):
+        self._send("commit", b"commit: ok")
+        self.committed = True
+
+    def __exit__(self, *exc):
+        try:
+            if self.process.poll() is None and not self.committed:
+                try:
+                    self.process.stdin.write(b"abort\n")
+                except OSError:
+                    pass  # The failed Git process has already closed its input.
+        finally:
+            self.process.stdin.close()
+            try:
+                self.process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+            self.reader.join(timeout=2)
+            self.process.stdout.close()

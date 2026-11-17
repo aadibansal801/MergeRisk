@@ -6,8 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "mergerisk"
 version = "2.0.0"
 description = "Local-first semantic Git merge diagnosis, verified repairs and dashboard"
+readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "jinja2>=3.1.6,<4"]
+dependencies = ["fastapi>=0.163.1,<0.164", "uvicorn>=0.54,<0.55", "jinja2>=3.1.6,<3.2"]
 
 [project.scripts]
 mergerisk = "mergerisk.cli:main"
@@ -16,6 +17,7 @@ mergerisk = "mergerisk.cli:main"
 test = ["pytest>=8,<10", "httpx>=0.27,<0.29", "build>=1,<2"]
 
 [tool.setuptools]
+include-package-data = false
 package-dir = {"" = "src", "detector" = "detector"}
 packages = [
   "detector",

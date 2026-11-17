@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+from mergerisk.semantic.python_adapter import parse_python
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import PurePosixPath
@@ -355,7 +356,7 @@ class CallGraphBuilder:
                 continue
             module_name = ImportResolver.module_name(file_path)
             try:
-                tree = ast.parse(source, filename=file_path)
+                tree = parse_python(source, file_path)
             except SyntaxError as error:
                 raise ValueError(f"cannot index Python syntax in {file_path}:{error.lineno}: {error.msg}") from error
             models.append(_ModuleModel(file_path, module_name, tree))

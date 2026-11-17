@@ -57,6 +57,8 @@ class GitScenarioAssembler:
         if match is None:
             raise GitVersionError(f"could not parse Git version: {self.git_version!r}")
         self._version = tuple(int(part or 0) for part in match.groups())
+        if self._version < (2, 43, 0):
+            raise GitVersionError("Git 2.43 or newer is required for the authoritative merge-tree workflow")
 
     def _run_git(
         self,
@@ -117,9 +119,6 @@ class GitScenarioAssembler:
         base_commit = self.resolve_commit(base)
         left_commit = self.resolve_commit(left)
         right_commit = self.resolve_commit(right)
-        if self._version < (2, 38, 0):
-            return self._create_candidate_tree_legacy(base_commit, left_commit, right_commit)
-
         safe_environment, safe_overrides = self._safe_merge_environment()
         result = self._run_git(
             [
@@ -153,7 +152,7 @@ class GitScenarioAssembler:
         environment["GIT_CONFIG_GLOBAL"] = os.devnull
 
         configured = self._run_git(
-            ["config", "--local", "--name-only", "--get-regexp", r"^merge\..*\.driver$"],
+            ["config", "--includes", "--name-only", "--get-regexp", r"^merge\..*\.driver$"],
             check=False,
             environment=environment,
         )
@@ -167,60 +166,7 @@ class GitScenarioAssembler:
             overrides.append(f"{key}=")
         return environment, overrides
 
-    def _create_candidate_tree_legacy(self, base: str, left: str, right: str) -> tuple[str | None, bool, list[str]]:
-        """Use a private temporary index on Git versions predating merge-tree --write-tree."""
-        import os
-        import tempfile
 
-        descriptor, index_name = tempfile.mkstemp(prefix="mergerisk-index-")
-        os.close(descriptor)
-        Path(index_name).unlink(missing_ok=True)
-        try:
-            environment = os.environ.copy()
-            environment["GIT_INDEX_FILE"] = index_name
-            read_tree = self._run_git_with_env(["read-tree", "-m", base, left, right], environment)
-            if read_tree.returncode not in (0, 1):
-                detail = read_tree.stderr.strip() or "could not populate temporary merge index"
-                raise GitCommandError(f"git read-tree failed ({read_tree.returncode}): {detail}")
-            unmerged = self._run_git_with_env(["ls-files", "-u", "-z"], environment)
-            conflict_files = sorted({
-                record.split("\t", 1)[1]
-                for record in unmerged.stdout.split("\x00")
-                if "\t" in record
-            })
-            if conflict_files:
-                return None, False, conflict_files
-            write_tree = self._run_git_with_env(["write-tree"], environment)
-            if write_tree.returncode != 0:
-                detail = write_tree.stderr.strip() or "could not write temporary merge tree"
-                raise GitCommandError(f"git write-tree failed ({write_tree.returncode}): {detail}")
-            return write_tree.stdout.strip(), True, []
-        finally:
-            Path(index_name).unlink(missing_ok=True)
-
-    def _run_git_with_env(
-        self,
-        arguments: list[str],
-        environment: dict[str, str],
-    ) -> subprocess.CompletedProcess[str]:
-        """Run one legacy plumbing command against a private temporary index."""
-        try:
-            return subprocess.run(
-                ["git", "-C", str(self.repo_path), *arguments],
-                check=False,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="surrogateescape",
-                timeout=_TIMEOUT_SECONDS,
-                env=environment,
-            )
-        except subprocess.TimeoutExpired as error:
-            raise GitCommandError(
-                f"Git command timed out after {_TIMEOUT_SECONDS}s: {arguments!r}"
-            ) from error
-        except OSError as error:
-            raise GitCommandError(f"could not execute Git: {error}") from error
 
     @staticmethod
     def _parse_conflict_files_from_messages(output: str) -> list[str]:

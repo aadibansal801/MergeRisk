@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from mergerisk.analysis.changes import (
     AttributedEdit, ChangeAttributionEngine, ChangeOp,
@@ -18,6 +18,7 @@ from mergerisk.rules.tier_a import (
 )
 from mergerisk.semantic.call_graph import CallGraphBuilder
 from mergerisk.semantic.global_state import GlobalStateResolver
+from mergerisk.semantic.python_adapter import parse_python
 from mergerisk.rules.mechanical import combine_findings, mechanical_issues
 
 
@@ -35,112 +36,28 @@ class AnalysisOrchestrator:
         self.config = config or AnalysisConfig()
 
     def analyze(self, snapshot: GitSnapshotReader, scenario: GitScenario) -> AnalysisResult:
-        """Load Git snapshots, attribute edits, resolve calls, and evaluate rules."""
+        """Inventory immutable snapshots, then invoke the same source pipeline as the product."""
         if not scenario.is_clean or scenario.merge_tree is None:
             raise ValueError("candidate merge is conflicted and cannot be analyzed")
-        context = RevisionContext(
-            scenario.base_commit, scenario.left_commit, scenario.right_commit,
-            scenario.merge_tree,
-        )
-        revisions = {
-            "base": scenario.base_commit,
-            "left": scenario.left_commit,
-            "right": scenario.right_commit,
-            "merge": scenario.merge_tree,
-        }
-        sources: dict[str, dict[str, str]] = {}
-        raw_sources: dict[str, dict[str, str]] = {}
-        classifications = {}
-        for role, revision in revisions.items():
-            classifications[role] = RepositoryInventory.classify_repository(
-                snapshot, revision, list(self.config.ignore_patterns),
-            )
-            raw_sources[role] = {}
-            sources[role] = {}
-            for item in classifications[role]:
-                if item.status == "skipped" or item.reason == "binary":
+        context = RevisionContext(scenario.base_commit, scenario.left_commit, scenario.right_commit, scenario.merge_tree)
+        sources, inventories = {}, {}
+        for role, revision in (("base", scenario.base_commit), ("left", scenario.left_commit),
+                               ("right", scenario.right_commit), ("merge", scenario.merge_tree)):
+            inventory = RepositoryInventory.classify_repository(snapshot, revision, list(self.config.ignore_patterns))
+            inventories[role], sources[role] = inventory, {}
+            for item in inventory:
+                if item.status == "skipped" or item.reason in {"binary", "source_encoding"}:
                     continue
                 content = snapshot.read_blob_at(revision, item.path)
-                if content is None or "\x00" in content:
-                    continue
-                raw_sources[role][item.path] = content
-                if item.status == "analyzed":
+                if content is not None:
                     sources[role][item.path] = content
-        unsupported_paths = {
-            item.path
-            for inventory in classifications.values()
-            for item in inventory
-            if item.status == "unsupported"
-        }
-        if unsupported_paths:
-            for role in sources:
-                sources[role] = {path: text for path, text in sources[role].items() if path not in unsupported_paths}
-        edits = self._attribute_sources(sources["base"], sources["left"], sources["right"])
-        all_candidate: dict[str, str] = {}
-        for path in snapshot.list_files_at(scenario.merge_tree):
-            if path.endswith(".py"):
-                content = snapshot.read_blob_at(scenario.merge_tree, path)
-                if content is not None and "\x00" not in content:
-                    all_candidate[path] = content
-        valid_candidate = sources["merge"]
-        calls = CallGraphBuilder().build_from_sources(valid_candidate)
-        resolver = GlobalStateResolver()
-        global_analyses = {
-            "base": resolver.analyze(sources["base"]),
-            "left": resolver.analyze(sources["left"]),
-            "right": resolver.analyze(sources["right"]),
-            "merge": resolver.analyze(valid_candidate),
-        }
-        rule_context = TierAContext(
-            candidate_sources=all_candidate,
-            attributed_edits=edits,
-            call_sites=calls,
-            revision_context=context,
-            base_sources=raw_sources["base"],
-            left_sources=raw_sources["left"],
-            right_sources=raw_sources["right"],
-            global_analyses=global_analyses,
-        )
-        rules = (SyntaxErrorRule(), DeletedSymbolRule(), SignatureMismatchRule(), SharedGlobalWriteRule())
-        findings = [finding for rule in rules for finding in rule.evaluate(rule_context)]
-        mechanical, mechanical_notes = mechanical_issues(rule_context)
-        findings = combine_findings(findings, mechanical)
-        findings.sort(key=lambda item: (item.rule_id, item.finding_id))
-        unsupported = sum(item.status == "unsupported" for item in classifications["merge"])
-        skipped = sum(item.status == "skipped" for item in classifications["merge"])
-        unresolved = (sum(call.status.value in {"unresolved", "ambiguous"} for call in calls)
-                      + global_analyses["merge"].unresolved_count)
-        dynamic = sum(
-            call.status.value == "ambiguous" or call.has_star_args or call.has_star_kwargs
-            for call in calls
-        )
-        notes = [
-            f"{len(edits)} branch-attributed entity edits; {len(calls)} statically indexed call sites.",
-            "Supported scope: tracked Python files, local calls, syntax, deleted symbols, signature compatibility, and direct module-global interactions.",
-        ]
-        notes.extend(mechanical_notes)
-        if unsupported:
-            notes.append(f"{unsupported} candidate Python file(s) were unsupported due to parse or binary content.")
-        branch_unsupported = sum(
-            item.status == "unsupported"
-            for role, inventory in classifications.items()
-            if role != "merge"
-            for item in inventory
-        )
-        if branch_unsupported:
-            notes.append(f"{branch_unsupported} base or branch file snapshot(s) were unsupported and excluded from attribution.")
-        if unresolved:
-            notes.append(f"{unresolved} call or global-state reference(s) are unresolved or ambiguous.")
-        if dynamic:
-            notes.append(f"{dynamic} call site(s) use dynamic or star-argument binding that Tier A cannot validate fully.")
-        status = AnalysisStatus.PARTIAL if unsupported or branch_unsupported or unresolved or dynamic or mechanical_notes else AnalysisStatus.SUCCESS
-        return AnalysisResult(
-            status, findings,
-            CoverageSummary(len(valid_candidate), skipped, unsupported, unresolved, dynamic),
-            {"base": context.base, "left": context.left, "right": context.right,
-             "merge_tree": context.merge_tree or "", "git_version": scenario.git_version},
-            notes,
-        )
+        result = self.analyze_sources(*(sources[r] for r in ("base", "left", "right", "merge")), context)
+        candidate = inventories["merge"]
+        unsupported = sum(i.status == "unsupported" for inventory in inventories.values() for i in inventory)
+        coverage = replace(result.coverage, files_analyzed=sum(i.status == "analyzed" for i in candidate),
+                           files_skipped=sum(i.status == "skipped" for i in candidate), files_unsupported=unsupported)
+        return replace(result, coverage=coverage, status=AnalysisStatus.PARTIAL if unsupported else result.status,
+                       manifest={**result.manifest, "git_version": scenario.git_version})
 
     def analyze_sources(
         self,
@@ -157,14 +74,14 @@ class AnalysisOrchestrator:
         for role, sources in (("base", base_sources), ("left", left_sources), ("right", right_sources)):
             for path, source in sorted(sources.items()):
                 try:
-                    ast.parse(source, filename=path)
+                    parse_python(source, path)
                 except SyntaxError as error:
                     parent_parse_errors.append((role, path, error))
         parse_errors = []
         valid = {}
         for path, source in sorted(candidate_sources.items()):
             try:
-                ast.parse(source, filename=path)
+                parse_python(source, path)
                 valid[path] = source
             except SyntaxError as error:
                 parse_errors.append((path, error))

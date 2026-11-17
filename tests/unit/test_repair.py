@@ -81,3 +81,36 @@ def test_signature_positional_only_cannot_be_satisfied_by_kwargs():
     fn = ast.parse("def f(x, /, **kwargs): pass").body[0]
     assert "omits required" in _binding_error(ast.parse("f(x=1)").body[0].value, _signature(fn))
     assert _binding_error(ast.parse("f(1, x=2)").body[0].value, _signature(fn)) is None
+
+
+def test_proven_keyword_alpha_rename_keeps_exact_expression_bytes():
+    base = b"def fetch(*, timeout=3):\n return timeout\n"
+    left = base.replace(b"timeout", b"deadline")
+    right = base + b"\ndef caller():\n return fetch( timeout = (1 +  2) ) # exact\n"
+    versions, analysis, result = exercise([base, left, right, left + right[len(base):]])
+    assert result.validation == "static_verified", result.rejection
+    assert result.plans[0].tier == "AUTO"
+    assert b"fetch( deadline = (1 +  2) ) # exact" in result.candidate["app.py"]
+
+
+@pytest.mark.parametrize("modified", [
+    b"def fetch(*, deadline=3):\n return deadline + 1\n",
+    b"def fetch(*, deadline=4):\n return deadline\n",
+    b"def fetch(*, deadline=3, token):\n return deadline\n",
+])
+def test_keyword_repair_refuses_business_changes_defaults_and_new_values(modified):
+    base = b"def fetch(*, timeout=3):\n return timeout\n"
+    right = base + b"\ndef caller():\n return fetch(timeout=3)\n"
+    _, _, result = exercise([base, modified, right, modified + right[len(base):]])
+    assert not any(p.tier == "AUTO" for p in result.plans)
+
+
+def test_repeated_calls_have_one_diagnostic_and_atomic_keyword_edits():
+    base = b"def fetch(*, timeout=3):\n return timeout\n"
+    left = base.replace(b"timeout", b"deadline")
+    right = base + b"\ndef caller():\n return [fetch(timeout=1), fetch(timeout=2)]\n"
+    _, analysis, result = exercise([base, left, right, left + right[len(base):]])
+    assert len(analysis.findings) == 1
+    assert result.validation == "static_verified", result.rejection
+    assert len(result.plans[0].edits) == 2
+    assert b"return [fetch(deadline=1), fetch(deadline=2)]" in result.candidate["app.py"]

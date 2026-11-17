@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -38,10 +39,15 @@ class History:
                     progress='Interrupted by server restart' WHERE state IN ('queued','running','cancelling','validating');
             """)
 
+    @contextmanager
     def connect(self):
         db = sqlite3.connect(self.path, timeout=10)
         db.row_factory = sqlite3.Row
-        return db
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def repositories(self):
         with self.connect() as db:
@@ -112,6 +118,12 @@ class History:
             db.execute("DELETE FROM actions WHERE run_id=?", (id,))
             db.execute("DELETE FROM runs WHERE id=?", (id,))
 
+    def storage_used(self):
+        with self.connect() as db:
+            size = db.execute("PRAGMA page_size").fetchone()[0]
+            pages = db.execute("PRAGMA page_count").fetchone()[0] - db.execute("PRAGMA freelist_count").fetchone()[0]
+        return size * pages
+
 
 def validate_repository_path(path: Path):
     if not path.is_absolute():
@@ -138,7 +150,7 @@ class Jobs:
 
     def submit(self, repo_id, left, right):
         self.history.repository(repo_id)
-        if self.history.path.stat().st_size > 256 * 1024 * 1024 or len(self.history.runs()) >= 500:
+        if self.history.storage_used() > 256 * 1024 * 1024 or len(self.history.runs()) >= 500:
             raise ValueError("History limit reached; export and delete older runs")
         if not self.capacity.acquire(blocking=False):
             raise OverflowError("Analysis queue is full (one running, three queued)")
@@ -175,10 +187,14 @@ class Jobs:
                 self.history.update(id, "complete", "Analysis complete", result=result)
                 self.events.pop(id, None)
         except InterruptedError:
-            self.history.update(id, "cancelled", "Cancelled; checkout and refs unchanged")
+            with self.lock:
+                self.history.update(id, "cancelled", "Cancelled; checkout and refs unchanged")
+                self.events.pop(id, None)
         except Exception as error:
             # Worker failures are persisted and visible, never reported as successful jobs.
-            self.history.update(id, "error", "Analysis failed", error=str(error))
+            with self.lock:
+                self.history.update(id, "error", "Analysis failed", error=str(error))
+                self.events.pop(id, None)
         finally:
             with self.lock:
                 self.events.pop(id, None)

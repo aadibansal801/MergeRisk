@@ -1,6 +1,6 @@
 """Known-safe sample repositories, used by the repeatable product demonstration."""
 from pathlib import Path
-import subprocess
+from mergerisk.git.plumbing import run_git
 
 BASE = b"import json\n\ndef a():\n    return 1\n\n# additional functions\n"
 RIGHT = BASE + b"\ndef b(x):\n    return json.dumps(x)\n"
@@ -13,7 +13,7 @@ def create_sample(path: Path, *, unsafe: bool = False) -> dict[str, str]:
         raise ValueError("Sample repository directory must be empty")
 
     def git(*args):
-        return subprocess.check_output(["git", "-C", str(path), *args], stderr=subprocess.PIPE, timeout=30).decode().strip()
+        return run_git(path, list(args)).stdout.decode().strip()
 
     git("init", "-b", "target")
     git("config", "user.name", "MergeRisk Demo")

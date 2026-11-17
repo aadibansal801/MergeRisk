@@ -1,0 +1,2 @@
+# Golden source bytes must survive clone/checkout unchanged, including BOM and CRLF.
+tests/repair_fixtures/**/*.py -text whitespace=cr-at-eol

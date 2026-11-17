@@ -170,3 +170,37 @@ def test_history_survives_restart(setup):
         session(second)
         assert second.get(f"/api/runs/{id}").json()["result"]["fingerprint"] == run["result"]["fingerprint"]
         assert second.get("/history").status_code == 200
+
+
+def test_review_reject_and_accept_real_rename_suggestion(setup):
+    client, headers, repo_id, repo, app = setup
+    baseline = b"def old_name(x):\n return x\n\n# unchanged context\n\n# extra functions\n"
+    (repo / "app.py").write_bytes(baseline)
+    run_git(repo, ["add", "app.py"])
+    run_git(repo, ["commit", "-m", "rename fixture base"])
+    base = run_git(repo, ["rev-parse", "HEAD"]).stdout.decode().strip()
+    run_git(repo, ["checkout", "-b", "rename-target"])
+    (repo / "app.py").write_bytes(baseline.replace(b"old_name", b"new_name"))
+    run_git(repo, ["add", "app.py"])
+    run_git(repo, ["commit", "-m", "rename target"])
+    run_git(repo, ["checkout", "-b", "rename-source", base])
+    (repo / "app.py").write_bytes(baseline + b"\ndef caller():\n return old_name(1)\n")
+    run_git(repo, ["add", "app.py"])
+    run_git(repo, ["commit", "-m", "add caller"])
+    run_git(repo, ["checkout", "rename-target"])
+    response = client.post("/api/runs", json={"repo_id": repo_id, "left": "rename-target", "right": "rename-source"}, headers=headers)
+    assert response.status_code == 202
+    id = response.json()["id"]
+    run = wait(client, id)
+    suggestion = next(p for p in run["result"]["repairs"] if p["tier"] == "SUGGEST")
+    response = client.post(f"/api/runs/{id}/review", json={**expected(run), "accepted": [], "rejected": [suggestion["id"]]}, headers=headers)
+    assert response.status_code == 200, response.text
+    rejected = client.get(f"/api/runs/{id}").json()
+    assert rejected["result"]["fixed_analysis"]["findings"]
+    assert client.post(f"/api/runs/{id}/commit", json=expected(rejected), headers=headers).status_code == 400
+    response = client.post(f"/api/runs/{id}/review", json={**expected(rejected), "accepted": [suggestion["id"]], "rejected": []}, headers=headers)
+    assert response.status_code == 200, response.text
+    accepted = client.get(f"/api/runs/{id}").json()
+    assert accepted["result"]["validation"] == "static_verified"
+    assert not accepted["result"]["fixed_analysis"]["findings"]
+    assert "return new_name(1)" in accepted["result"]["files"]["app.py"]["fixed"]

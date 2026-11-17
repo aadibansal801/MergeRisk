@@ -19,7 +19,7 @@
 - Phase 2: passed
 - Phase 3: passed
 - Phase 4: passed
-- Phase 5: pending
+- Phase 5: passed
 
 - Test environment note: elevated pytest could not access the host shared temp directory; the dedicated project .test-runs parent must exist. Tests run normally in the sandbox with a unique --basetemp.
 
@@ -55,3 +55,19 @@
 - Browser automation completed the full registration-to-apply flow: e214bc385ddfa9d4f31f29158afc2ad11b9f3b0a, tree a86996132470d865452abcab7befb130c1d578f0. Desktop and 390x844 layouts inspected, screenshots and reports/browser-smoke.json saved.
 - Docker executable exists but Docker Desktop Linux daemon is unavailable (named pipe missing); configured project runtime execution remains unverified and reports validation_unavailable.
 - Next: optimize the measured snapshot bottleneck, release docs/build, fresh-wheel install and final regression/evaluation.
+
+## Phase 5 — passed
+
+- Measured baseline snapshot reads at 10/50/200 files: 4.1068 / 18.2996 / 78.9106 seconds. Batched blob cache + shared orchestration + compiler/AST cache: 0.5526 / 0.7966 / 1.5061 seconds in the final measured run. Product preview: 0.8559 / 1.3226 / 2.4838 seconds, including repair checks. Python heap peaks recorded in reports/benchmark-after.json; no whole-process/RSS or universal timing claim.
+- Added proven keyword alpha-rename AUTO edits; changed defaults/new values/body effects remain refused. Added import-cycle/shadow checks, real relative aliases, shallow/detached/unicode/symlink cases, prepared ref locking and rollback, global author identity compatibility, bounded runner-command assertions.
+- Final source suite command: python -m pytest -q -p no:cacheprovider --basetemp=.test-runs/release-green. Result: 183 passed, 32 subtests passed, one upstream Starlette/httpx warning; reports/tests-final.txt.
+- Evaluators: 13 authored repair cases; correct fixes 5/5, false fixes 0/13, correct refusals 7/7, one separate clean control. Precision/recall 1.00 for the five represented rules; seven partial original analyses with unresolved/dynamic counts reported. Legacy supported evaluation remains precision/recall 1.00; broader deferred cases remain explicit.
+- Independent wheel environment .test-runs/wheel-venv imported site-packages, bundled assets, and passed actual HTTP/Git registration/analyze/repair/create/apply/history/refusal plus installed CLI exit 3. First smoke exposed SQLite connection handles retained after transaction exit. Fixed History.connect with guaranteed close/rollback; two dedicated regressions pass; independent smoke then passed including Windows temporary-directory cleanup. No ignored cleanup errors.
+- One inherited unexpected-keyword positive fixture was already invalid on its source parent. Preserved its positive assertions, corrected the base to accept the keyword, and retained the original parent-invalid case as a new negative regression. Full suite green afterward.
+- Build produced wheel and sdist using setuptools 84.2.1. Explicit package data avoids namespace-package ambiguity; no frontend build. Final archive refresh includes the complete documentation/corrected fixtures. pip check and compileall src/detector/scripts passed.
+- Final retained demo: .test-runs/final-demo. Commit 284bfc03f4a0a2e81d77c5a77aab823a8aa7f7e6; parents 6f91b673cb283d3aeb0becd4db7324a3ffb8cd5d and 6fda62d0a6f2827564c648b5e41d1f5d4ec822d7; fixed tree a86996132470d865452abcab7befb130c1d578f0. Exact import bytes, known-safe sample app and explicit apply passed. Unsafe required-argument commit refused.
+- Recovery: original README edits preserved at ff60cec before replacement. Initial user-authored DOCX remains untouched/untracked. Golden-only -text attributes preserve fixture BOM/CRLF; no repository-wide normalization. Original compatibility modules/tests remain.
+- CI preserves Python 3.10–3.14 and adds Windows alongside Linux, with evaluator/demo/build checks. Remote CI was not run or pushed. Actual Docker containers remain unverified because the daemon is absent; unavailable status is honest and no host fallback executes.
+- Independent distribution suite: extracted sdist tests ran against the installed wheel from outside the source root: 183 passed + 32 subtests in 86.24 seconds, one upstream warning; reports/tests-installed-wheel.txt. Final wheel smoke again passed and reports the applied artifact accurately.
+- All six gates passed for the documented static Python subset. No implementation blockers. Final archive hashes are in reports/release.json; the local release commit records the completed tree. No push performed.
+- The final installed dashboard is running on http://127.0.0.1:8765 with the retained labeled sample/history store in .test-runs/browser-state. Persisted results were verified in the browser after restart.

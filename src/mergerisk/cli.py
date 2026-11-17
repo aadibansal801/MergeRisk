@@ -31,6 +31,7 @@ def _parser():
             cmd.add_argument("--apply", action="store_true", help="explicitly fast-forward a clean checkout at the target SHA; requires --create-commit")
             cmd.add_argument("--allow-partial", action="store_true", help="acknowledge incomplete static coverage when creating a commit")
             cmd.add_argument("--accept", action="append", default=[], metavar="SUGGESTION_ID", help="accept an exact reviewed suggestion")
+            cmd.add_argument("--expected", help="require this exact previously reviewed preview fingerprint")
     fixture = commands.add_parser("fixture", help="legacy four-file static analysis")
     for role in ("base", "left", "right", "merged"):
         fixture.add_argument(role)
@@ -49,6 +50,7 @@ def _parser():
 def main(argv=None):
     args = _parser().parse_args(argv)
     output = getattr(args, "format", "terminal")
+    artifact = None
     try:
         if args.command == "version":
             print("MergeRisk " + version("mergerisk"))
@@ -82,10 +84,13 @@ def main(argv=None):
         service = MergeService(Path(args.repo))
         preview = service.preview(args.left, args.right, base=args.base, accepted=set(getattr(args, "accept", [])))
         report = preview.to_dict()
+        if getattr(args, "expected", None) and args.expected != preview.fingerprint:
+            raise ValueError("Stale preview fingerprint; the selected revisions or repairs changed")
         if args.verify_config:
             from mergerisk.verification import RuntimeConfig, verify_runtime
             config = json.loads(args.verify_config.read_text(encoding="utf-8"))
-            if not isinstance(config, dict) or set(config) - {"image", "command", "timeout"}:
+            if (not isinstance(config, dict) or set(config) - {"image", "command", "timeout"}
+                    or not {"image", "command"} <= config.keys()):
                 raise ValueError("Invalid runtime verification configuration")
             report["runtime"] = verify_runtime(service, preview, RuntimeConfig(**config))
         code = 0
@@ -123,9 +128,14 @@ def main(argv=None):
         return code
     except (OSError, ValueError, RuntimeError) as error:
         if output == "json":
-            print(json.dumps({"status": "failed", "error": str(error)}, ensure_ascii=True, sort_keys=True))
+            failure = {"status": "failed", "error": str(error)}
+            if artifact:
+                failure["artifact"] = artifact
+            print(json.dumps(failure, ensure_ascii=True, sort_keys=True))
         else:
             print(f"MergeRisk: {error}", file=sys.stderr)
+            if artifact:
+                print("Created artifact retained at " + artifact["ref"], file=sys.stderr)
         return 1
 
 
