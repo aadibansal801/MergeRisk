@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "url": "http://127.0.0.1:18765/runs/18eb0b124073468e989a9f796bc9cee2",
+  "artifact": {
+    "commit": "5ce9c6302cce833079b3facc96a0d52149133f3e",
+    "tree": "a86996132470d865452abcab7befb130c1d578f0",
+    "parents": [
+      "ea86f52796a53a940be89495f25f4fcf6b5d197d",
+      "9017cf76c88b1a719598315c091f9303d2477d58"
+    ],
+    "ref": "refs/mergerisk/b386bec10768449fa143af94d1accc6b",
+    "next_steps": [
+      "git show refs/mergerisk/b386bec10768449fa143af94d1accc6b",
+      "git merge --ff-only refs/mergerisk/b386bec10768449fa143af94d1accc6b"
+    ],
+    "applied": true
+  },
+  "exact_source_bytes": true,
+  "steps": [
+    "register",
+    "branch selection",
+    "analyze/progress",
+    "filter empty state and reset",
+    "fixed-source selector",
+    "create commit/checkout unchanged",
+    "explicit apply/success"
+  ],
+  "filter_empty_visible": true,
+  "screenshot": "dashboard.jpg"
+}

@@ -1,0 +1,16 @@
+usage: mergerisk [-h]
+                 {analyze,merge,fixture,explain,version,doctor,dashboard} ...
+
+Local-first semantic Python merge assistant
+
+positional arguments:
+  {analyze,merge,fixture,explain,version,doctor,dashboard}
+    analyze             diagnose a merge
+    merge               preview, create or explicitly apply a repaired merge
+    fixture             legacy four-file static analysis
+    explain             learn what a rule means
+    doctor              check installation and Git support
+    dashboard           start the local dashboard server
+
+options:
+  -h, --help            show this help message and exit

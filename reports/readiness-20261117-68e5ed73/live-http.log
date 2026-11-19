@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "base_url": "http://127.0.0.1:18765",
+  "safe_run": "70dcdf29e1414ff4ace4d0a24406367e",
+  "unsafe_run": "c870adf984c94e4297b20f962b031a0e",
+  "suggestion_run": "a45268e7f5d04574b26d78097d6e5e91",
+  "progress_states": [
+    "queued",
+    "running",
+    "complete"
+  ],
+  "artifact": {
+    "commit": "01869dcfd4dc524dd1149e0086fd7d2a0a913744",
+    "tree": "a86996132470d865452abcab7befb130c1d578f0",
+    "parents": [
+      "fa19ca3b3f267b6cd30532982d592555ee90d967",
+      "4ac7a0f2ced8dad5733efcbd7253251c3f45337d"
+    ],
+    "ref": "refs/mergerisk/bc189c7ea53945b78df30f32cca8d4e4",
+    "next_steps": [
+      "git show refs/mergerisk/bc189c7ea53945b78df30f32cca8d4e4",
+      "git merge --ff-only refs/mergerisk/bc189c7ea53945b78df30f32cca8d4e4"
+    ],
+    "applied": true
+  },
+  "read_only_snapshot_equal": true,
+  "commit_checkout_unchanged": true,
+  "dirty_apply_preserved_bytes": true,
+  "unsafe_fix_refused": true,
+  "suggestions_rejected_then_explicitly_accepted": true,
+  "csrf_origin_host_auth_xss_traversal_limits": true,
+  "cancellation": true,
+  "runtime_unavailable": "Configured image is not available locally; no automatic pulls.",
+  "requests": 98
+}

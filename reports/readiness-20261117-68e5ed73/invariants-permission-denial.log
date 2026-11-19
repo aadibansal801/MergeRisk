@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "C:\Users\aadib\OneDrive\Desktop\MergeRisk\reports\readiness-20261117-68e5ed73\check_invariants.py", line 77, in <module>
+    assert process.returncode in {0, 3}, process.stderr.decode(errors="replace") + process.stdout[:1000].decode(errors="replace")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {"error": "git merge-tree failed (128): error: insufficient permission for adding an object to repository database .git/objects\nfatal: failure to merge", "status": "failed"}
+
+

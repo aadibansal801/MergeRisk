@@ -71,3 +71,14 @@
 - Independent distribution suite: extracted sdist tests ran against the installed wheel from outside the source root: 183 passed + 32 subtests in 86.24 seconds, one upstream warning; reports/tests-installed-wheel.txt. Final wheel smoke again passed and reports the applied artifact accurately.
 - All six gates passed for the documented static Python subset. No implementation blockers. Final archive hashes are in reports/release.json; the local release commit records the completed tree. No push performed.
 - The final installed dashboard is running on http://127.0.0.1:8765 with the retained labeled sample/history store in .test-runs/browser-state. Persisted results were verified in the browser after restart.
+
+## Independent final release-readiness verification — 2026-11-17
+
+- Verified unchanged application checkout 1f08ac725b83d72303aece44f052b4b47f4b228c with two new virtual environments; source install was non-editable.
+- Fresh full suite: 183 passed, 1 warning, 32 subtests passed in 88.51s (0:01:28). Installed-wheel security/repair/Git/API subset: 48 passed, 1 warning in 47.07s. Both evaluators, new wheel/sdist build/install and independent smoke executed successfully.
+- Real Git demo f86f851503f8cc71cc08f1cdbde2c73112eb70d2 passed exact bytes/parents/tree, explicit apply and unsafe refusal.
+- Live installed dashboard on port 18765 passed 98 TCP HTTP requests and a separate browser registration-to-apply flow. Original port 8765 dashboard left untouched.
+- Independent span/expression guards passed all 13 corpus cases; read-only analyze/merge preserved 304 user file hashes plus HEAD/refs/index/config. Initial managed object-store permission denial was retained and resolved by rerunning with access, without changing code/assertions.
+- Idle 200-file snapshot/product preview: 1.2291s/2.2492s, product Python heap peak 1.566 MiB (not RSS); 10/50-file and concurrent-load samples also retained.
+- No product-code changes or unresolved application failures. Docker daemon unavailable; actual containers, Linux/macOS, other Python versions and remote CI remain unverified.
+- Exact commands, raw outputs, package hashes, scripts and screenshot: reports/readiness-20261117-68e5ed73/REPORT.md and adjacent evidence.

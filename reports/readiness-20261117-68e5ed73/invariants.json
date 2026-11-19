@@ -1,0 +1,139 @@
+{
+  "golden_cases": [
+    {
+      "case": "alias",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": true,
+      "validation": "static_verified"
+    },
+    {
+      "case": "bom_crlf",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": true,
+      "validation": "static_verified"
+    },
+    {
+      "case": "clean",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "decorated_duplicates",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "duplicate_import",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "dynamic_refusal",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "encoding_cookie",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": true,
+      "validation": "static_verified"
+    },
+    {
+      "case": "json",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": true,
+      "validation": "static_verified"
+    },
+    {
+      "case": "keyword_rename",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": true,
+      "validation": "static_verified"
+    },
+    {
+      "case": "local_import_refusal",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "rename_review",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "required_argument",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    },
+    {
+      "case": "typo_review",
+      "untouched_bytes_equal": true,
+      "argument_expressions_equal": true,
+      "changed": false,
+      "validation": "validation_unavailable"
+    }
+  ],
+  "user_repository": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk",
+  "user_files_hashed": 304,
+  "user_snapshot_sha256": "104972f4aa60030320b29ba2ab5c8bef1bc836aeb5154ffb4f1a374436d6cd6a",
+  "read_only_operations": [
+    {
+      "command": [
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\readiness-20261117-68e5ed73\\wheel-env\\Scripts\\python.exe",
+        "-m",
+        "mergerisk",
+        "analyze",
+        "--repo",
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk",
+        "--left",
+        "HEAD~1",
+        "--right",
+        "HEAD",
+        "--format",
+        "json"
+      ],
+      "exit_code": 0,
+      "snapshot_equal": true,
+      "findings": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\readiness-20261117-68e5ed73\\wheel-env\\Scripts\\python.exe",
+        "-m",
+        "mergerisk",
+        "merge",
+        "--repo",
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk",
+        "--left",
+        "HEAD~1",
+        "--right",
+        "HEAD",
+        "--format",
+        "json"
+      ],
+      "exit_code": 0,
+      "snapshot_equal": true,
+      "findings": 0
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "installed_package": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\readiness-20261117-68e5ed73\\wheel-env\\Lib\\site-packages\\mergerisk\\__init__.py",
+  "bundled_assets": true,
+  "actual_http_routes": true,
+  "safe_artifact": {
+    "commit": "38bfbac207d9c5b85d747c6b253f924ab32655ba",
+    "tree": "a86996132470d865452abcab7befb130c1d578f0",
+    "parents": [
+      "3de45f779f590869958e2f2fe1d4c5c4e1fd34f9",
+      "4db2719d52ce35ff54c9d7b9689150f7e27e2499"
+    ],
+    "ref": "refs/mergerisk/f7056173b75d434a88b4b021ce83e9b9",
+    "next_steps": [
+      "git show refs/mergerisk/f7056173b75d434a88b4b021ce83e9b9",
+      "git merge --ff-only refs/mergerisk/f7056173b75d434a88b4b021ce83e9b9"
+    ],
+    "applied": true
+  },
+  "exact_repaired_bytes": true,
+  "parent_and_tree_identity": true,
+  "explicit_apply": true,
+  "unsafe_commit_refused": true,
+  "installed_cli_refusal_exit": 3
+}

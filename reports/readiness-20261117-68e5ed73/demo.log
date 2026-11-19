@@ -1,0 +1,46 @@
+{
+  "artifact": {
+    "applied": true,
+    "commit": "f86f851503f8cc71cc08f1cdbde2c73112eb70d2",
+    "next_steps": [
+      "git show refs/mergerisk/6d37b3981c6e454c980292d37574094d",
+      "git merge --ff-only refs/mergerisk/6d37b3981c6e454c980292d37574094d"
+    ],
+    "parents": [
+      "5369a64cf676c2f73551ec2033448919159eadb3",
+      "b7e15bf72f072d580be6a14bed5925c49c89d5c5"
+    ],
+    "ref": "refs/mergerisk/6d37b3981c6e454c980292d37574094d",
+    "tree": "a86996132470d865452abcab7befb130c1d578f0"
+  },
+  "repair": {
+    "diff": "--- a/app.py\n+++ b/app.py\n@@ -1,3 +1,4 @@\n+import json\n \n def a():\n     return 1\n",
+    "edits": [
+      {
+        "after": "import json\n",
+        "before": "",
+        "end": 0,
+        "start": 0
+      }
+    ],
+    "finding_id": "d136f540d6ebc967",
+    "id": "95d8ee952253c1cdbfb3",
+    "path": "app.py",
+    "reason": "Exact historical import, unique missing binding and unchanged import order.",
+    "rule_id": "MR-PY-IMPORT-001",
+    "source_hash": "f09c467963a8efbbc36346c502edaef61d37547663d9e5405cd79e23b6389ca9",
+    "status": "static_verified",
+    "tier": "AUTO",
+    "tree": "6e1cb16399f72178ea0de04444c3b01205a80c18"
+  },
+  "repository": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\readiness-20261117-68e5ed73\\git-demo\\safe",
+  "revisions": {
+    "base": "bf04f9f8df1fd0e9be02095671ad4ca139461e28",
+    "left": "5369a64cf676c2f73551ec2033448919159eadb3",
+    "right": "b7e15bf72f072d580be6a14bed5925c49c89d5c5"
+  },
+  "runtime_scope": "Only the known-safe built-in sample was executed.",
+  "sample_app_passed": true,
+  "unsafe_refusal": "Unresolved blocking findings or invalid repairs; merge commit refused",
+  "unsafe_repository": "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\readiness-20261117-68e5ed73\\git-demo\\unsafe"
+}

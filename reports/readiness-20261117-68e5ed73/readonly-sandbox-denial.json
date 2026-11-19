@@ -1,0 +1,1 @@
+{"error": "git merge-tree failed (128): error: insufficient permission for adding an object to repository database .git/objects\nfatal: failure to merge", "status": "failed"}

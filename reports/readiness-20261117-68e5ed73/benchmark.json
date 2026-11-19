@@ -1,0 +1,43 @@
+{
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.5",
+    "git": "git version 2.55.0.windows.3"
+  },
+  "method": "One cold Python-cache sample per size; OS filesystem caches uncontrolled; includes tracemalloc overhead. Python heap peak excludes Git processes and OS buffers.",
+  "measurements": [
+    {
+      "python_files_per_revision": 10,
+      "snapshot_analysis": {
+        "seconds": 0.8146,
+        "python_heap_peak_mib": 0.227
+      },
+      "product_preview": {
+        "seconds": 1.2048,
+        "python_heap_peak_mib": 0.272
+      }
+    },
+    {
+      "python_files_per_revision": 50,
+      "snapshot_analysis": {
+        "seconds": 0.8813,
+        "python_heap_peak_mib": 0.495
+      },
+      "product_preview": {
+        "seconds": 1.8883,
+        "python_heap_peak_mib": 0.604
+      }
+    },
+    {
+      "python_files_per_revision": 200,
+      "snapshot_analysis": {
+        "seconds": 1.5892,
+        "python_heap_peak_mib": 1.481
+      },
+      "product_preview": {
+        "seconds": 2.5918,
+        "python_heap_peak_mib": 1.566
+      }
+    }
+  ]
+}

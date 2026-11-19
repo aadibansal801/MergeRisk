@@ -1,0 +1,110 @@
+{
+  "verified_commit": "1f08ac725b83d72303aece44f052b4b47f4b228c",
+  "full_suite_output": "183 passed, 1 warning, 32 subtests passed in 88.51s (0:01:28)",
+  "security_suite_output": "48 passed, 1 warning in 47.07s",
+  "repair_auto_correct": 5,
+  "repair_refusals_correct": 7,
+  "repair_cases": 13,
+  "false_fix_rate": 0.0,
+  "partial_corpus_analyses": 7,
+  "tcp_http_requests": 98,
+  "live_http_passed": true,
+  "browser_passed": true,
+  "source_files_preserved_during_readonly": 304,
+  "byte_and_expression_cases": 13,
+  "demo_artifact": {
+    "applied": true,
+    "commit": "f86f851503f8cc71cc08f1cdbde2c73112eb70d2",
+    "next_steps": [
+      "git show refs/mergerisk/6d37b3981c6e454c980292d37574094d",
+      "git merge --ff-only refs/mergerisk/6d37b3981c6e454c980292d37574094d"
+    ],
+    "parents": [
+      "5369a64cf676c2f73551ec2033448919159eadb3",
+      "b7e15bf72f072d580be6a14bed5925c49c89d5c5"
+    ],
+    "ref": "refs/mergerisk/6d37b3981c6e454c980292d37574094d",
+    "tree": "a86996132470d865452abcab7befb130c1d578f0"
+  },
+  "browser_artifact": {
+    "commit": "5ce9c6302cce833079b3facc96a0d52149133f3e",
+    "tree": "a86996132470d865452abcab7befb130c1d578f0",
+    "parents": [
+      "ea86f52796a53a940be89495f25f4fcf6b5d197d",
+      "9017cf76c88b1a719598315c091f9303d2477d58"
+    ],
+    "ref": "refs/mergerisk/b386bec10768449fa143af94d1accc6b",
+    "next_steps": [
+      "git show refs/mergerisk/b386bec10768449fa143af94d1accc6b",
+      "git merge --ff-only refs/mergerisk/b386bec10768449fa143af94d1accc6b"
+    ],
+    "applied": true
+  },
+  "benchmarks": {
+    "environment": {
+      "platform": "Windows-11-10.0.26200-SP0",
+      "python": "3.13.5",
+      "git": "git version 2.55.0.windows.3"
+    },
+    "method": "One cold Python-cache sample per size; OS filesystem caches uncontrolled; includes tracemalloc overhead. Python heap peak excludes Git processes and OS buffers.",
+    "measurements": [
+      {
+        "python_files_per_revision": 10,
+        "snapshot_analysis": {
+          "seconds": 0.6323,
+          "python_heap_peak_mib": 0.228
+        },
+        "product_preview": {
+          "seconds": 0.9471,
+          "python_heap_peak_mib": 0.272
+        }
+      },
+      {
+        "python_files_per_revision": 50,
+        "snapshot_analysis": {
+          "seconds": 0.7645,
+          "python_heap_peak_mib": 0.493
+        },
+        "product_preview": {
+          "seconds": 1.2433,
+          "python_heap_peak_mib": 0.597
+        }
+      },
+      {
+        "python_files_per_revision": 200,
+        "snapshot_analysis": {
+          "seconds": 1.2291,
+          "python_heap_peak_mib": 1.481
+        },
+        "product_preview": {
+          "seconds": 2.2492,
+          "python_heap_peak_mib": 1.566
+        }
+      }
+    ]
+  },
+  "packages": {
+    "artifacts": {
+      "mergerisk-2.0.0-py3-none-any.whl": {
+        "bytes": 108964,
+        "sha256": "bc95fde0fbde6a6f10be09f1fdafb8a338e303bdf55a7b919296c04b4b7a0b32"
+      },
+      "mergerisk-2.0.0.tar.gz": {
+        "bytes": 287898,
+        "sha256": "2dc68a62555b6eedf2cc5ed78a168e1f21bd7c8c3fe9d978a149a871e9812d88"
+      }
+    },
+    "wheel_payload_files": 47,
+    "installed_payload_equal": true,
+    "bundled_assets": true,
+    "sdist_golden_bytes_equal": true,
+    "sdist_cli_present": true,
+    "source_install_payload_equal": true
+  },
+  "application_code_changes": [],
+  "unverified": [
+    "Linux/macOS and other Python versions",
+    "Actual Docker container execution: daemon named pipe absent"
+  ],
+  "unresolved_application_failures": []
+}

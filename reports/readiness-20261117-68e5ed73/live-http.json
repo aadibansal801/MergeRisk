@@ -1,0 +1,627 @@
+{
+  "summary": {
+    "passed": true,
+    "base_url": "http://127.0.0.1:18765",
+    "safe_run": "70dcdf29e1414ff4ace4d0a24406367e",
+    "unsafe_run": "c870adf984c94e4297b20f962b031a0e",
+    "suggestion_run": "a45268e7f5d04574b26d78097d6e5e91",
+    "progress_states": [
+      "queued",
+      "running",
+      "complete"
+    ],
+    "artifact": {
+      "commit": "01869dcfd4dc524dd1149e0086fd7d2a0a913744",
+      "tree": "a86996132470d865452abcab7befb130c1d578f0",
+      "parents": [
+        "fa19ca3b3f267b6cd30532982d592555ee90d967",
+        "4ac7a0f2ced8dad5733efcbd7253251c3f45337d"
+      ],
+      "ref": "refs/mergerisk/bc189c7ea53945b78df30f32cca8d4e4",
+      "next_steps": [
+        "git show refs/mergerisk/bc189c7ea53945b78df30f32cca8d4e4",
+        "git merge --ff-only refs/mergerisk/bc189c7ea53945b78df30f32cca8d4e4"
+      ],
+      "applied": true
+    },
+    "read_only_snapshot_equal": true,
+    "commit_checkout_unchanged": true,
+    "dirty_apply_preserved_bytes": true,
+    "unsafe_fix_refused": true,
+    "suggestions_rejected_then_explicitly_accepted": true,
+    "csrf_origin_host_auth_xss_traversal_limits": true,
+    "cancellation": true,
+    "runtime_unavailable": "Configured image is not available locally; no automatic pulls.",
+    "requests": 98
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "seconds": 0.0465
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs",
+      "status": 403,
+      "seconds": 0.0016
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs",
+      "status": 403,
+      "seconds": 0.0021
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 400,
+      "seconds": 0.0011
+    },
+    {
+      "method": "POST",
+      "path": "/api/repositories",
+      "status": 413,
+      "seconds": 0.0012
+    },
+    {
+      "method": "POST",
+      "path": "/api/repositories",
+      "status": 201,
+      "seconds": 0.1426
+    },
+    {
+      "method": "POST",
+      "path": "/api/repositories",
+      "status": 201,
+      "seconds": 0.144
+    },
+    {
+      "method": "GET",
+      "path": "/api/repositories/00000000000000000000000000000000/branches",
+      "status": 404,
+      "seconds": 0.0057
+    },
+    {
+      "method": "POST",
+      "path": "/api/repositories",
+      "status": 400,
+      "seconds": 0.002
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "seconds": 0.0091
+    },
+    {
+      "method": "GET",
+      "path": "/new?repo=f220a2a4e24f4f6c85b201b1985bdc94",
+      "status": 200,
+      "seconds": 0.0169
+    },
+    {
+      "method": "GET",
+      "path": "/history",
+      "status": 200,
+      "seconds": 0.0144
+    },
+    {
+      "method": "GET",
+      "path": "/learn",
+      "status": 200,
+      "seconds": 0.0107
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "status": 200,
+      "seconds": 0.0291
+    },
+    {
+      "method": "GET",
+      "path": "/static/app.js",
+      "status": 200,
+      "seconds": 0.0868
+    },
+    {
+      "method": "GET",
+      "path": "/static/app.css",
+      "status": 200,
+      "seconds": 0.0102
+    },
+    {
+      "method": "GET",
+      "path": "/api/repositories/f220a2a4e24f4f6c85b201b1985bdc94/branches",
+      "status": 200,
+      "seconds": 0.193
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs",
+      "status": 202,
+      "seconds": 0.0165
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0037
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0068
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0081
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.006
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0071
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0062
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0058
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0068
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0075
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0066
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0083
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0071
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0075
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0074
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0067
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0112
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0084
+    },
+    {
+      "method": "GET",
+      "path": "/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0535
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e/review",
+      "status": 200,
+      "seconds": 0.8909
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e/commit",
+      "status": 409,
+      "seconds": 0.0092
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.0075
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e/commit",
+      "status": 200,
+      "seconds": 1.5642
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e",
+      "status": 200,
+      "seconds": 0.007
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e/apply",
+      "status": 400,
+      "seconds": 0.4685
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e/apply",
+      "status": 200,
+      "seconds": 0.5641
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/70dcdf29e1414ff4ace4d0a24406367e/export",
+      "status": 200,
+      "seconds": 0.0082
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs",
+      "status": 202,
+      "seconds": 0.0202
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0324
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0083
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0075
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0054
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0058
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0066
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0071
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0069
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0084
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0066
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0073
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0117
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0058
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0132
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0067
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0109
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.008
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e/commit",
+      "status": 400,
+      "seconds": 1.2777
+    },
+    {
+      "method": "GET",
+      "path": "/runs/c870adf984c94e4297b20f962b031a0e",
+      "status": 200,
+      "seconds": 0.0105
+    },
+    {
+      "method": "POST",
+      "path": "/api/repositories/172f2f92048149308b89e04f36737fde/settings",
+      "status": 200,
+      "seconds": 0.0148
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/c870adf984c94e4297b20f962b031a0e/verify",
+      "status": 200,
+      "seconds": 0.9743
+    },
+    {
+      "method": "POST",
+      "path": "/api/repositories/172f2f92048149308b89e04f36737fde/settings",
+      "status": 200,
+      "seconds": 0.0091
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs",
+      "status": 202,
+      "seconds": 0.0137
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/f3359c49c064451f88866ebff992c0a6/cancel",
+      "status": 200,
+      "seconds": 0.0252
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/f3359c49c064451f88866ebff992c0a6",
+      "status": 200,
+      "seconds": 0.0056
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/f3359c49c064451f88866ebff992c0a6",
+      "status": 200,
+      "seconds": 0.0081
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/f3359c49c064451f88866ebff992c0a6",
+      "status": 200,
+      "seconds": 0.0087
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/f3359c49c064451f88866ebff992c0a6/delete",
+      "status": 200,
+      "seconds": 0.018
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/f3359c49c064451f88866ebff992c0a6",
+      "status": 404,
+      "seconds": 0.007
+    },
+    {
+      "method": "POST",
+      "path": "/api/repositories",
+      "status": 201,
+      "seconds": 0.1476
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs",
+      "status": 202,
+      "seconds": 0.0211
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0215
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0083
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0082
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0065
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0059
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0064
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0061
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0073
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.008
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0063
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0072
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0149
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0069
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.008
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0119
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0077
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91/review",
+      "status": 200,
+      "seconds": 0.8139
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0071
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91/commit",
+      "status": 400,
+      "seconds": 1.2432
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91/review",
+      "status": 200,
+      "seconds": 0.8707
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/a45268e7f5d04574b26d78097d6e5e91",
+      "status": 200,
+      "seconds": 0.0086
+    },
+    {
+      "method": "GET",
+      "path": "/history",
+      "status": 200,
+      "seconds": 0.0089
+    }
+  ]
+}

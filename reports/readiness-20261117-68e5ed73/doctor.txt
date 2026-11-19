@@ -1,0 +1,4 @@
+MergeRisk 2.0.0 | Python 3.13.5 | git version 2.55.0.windows.3
+Git worktree: C:\Users\aadib\OneDrive\Desktop\MergeRisk
+Dashboard: bundled FastAPI/Jinja assets
+Runtime: Docker executable found; isolated verification needs explicit configuration.

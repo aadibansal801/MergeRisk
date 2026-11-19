@@ -1,0 +1,18 @@
+{
+  "artifacts": {
+    "mergerisk-2.0.0-py3-none-any.whl": {
+      "bytes": 108964,
+      "sha256": "bc95fde0fbde6a6f10be09f1fdafb8a338e303bdf55a7b919296c04b4b7a0b32"
+    },
+    "mergerisk-2.0.0.tar.gz": {
+      "bytes": 287898,
+      "sha256": "2dc68a62555b6eedf2cc5ed78a168e1f21bd7c8c3fe9d978a149a871e9812d88"
+    }
+  },
+  "wheel_payload_files": 47,
+  "installed_payload_equal": true,
+  "bundled_assets": true,
+  "sdist_golden_bytes_equal": true,
+  "sdist_cli_present": true,
+  "source_install_payload_equal": true
+}

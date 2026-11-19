@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "golden_cases": 13,
+  "user_files_hashed": 304,
+  "operations": [
+    {
+      "command": [
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\readiness-20261117-68e5ed73\\wheel-env\\Scripts\\python.exe",
+        "-m",
+        "mergerisk",
+        "analyze",
+        "--repo",
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk",
+        "--left",
+        "HEAD~1",
+        "--right",
+        "HEAD",
+        "--format",
+        "json"
+      ],
+      "exit_code": 0,
+      "snapshot_equal": true,
+      "findings": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk\\.test-runs\\readiness-20261117-68e5ed73\\wheel-env\\Scripts\\python.exe",
+        "-m",
+        "mergerisk",
+        "merge",
+        "--repo",
+        "C:\\Users\\aadib\\OneDrive\\Desktop\\MergeRisk",
+        "--left",
+        "HEAD~1",
+        "--right",
+        "HEAD",
+        "--format",
+        "json"
+      ],
+      "exit_code": 0,
+      "snapshot_equal": true,
+      "findings": 0
+    }
+  ]
+}
