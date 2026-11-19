@@ -82,3 +82,10 @@
 - Idle 200-file snapshot/product preview: 1.2291s/2.2492s, product Python heap peak 1.566 MiB (not RSS); 10/50-file and concurrent-load samples also retained.
 - No product-code changes or unresolved application failures. Docker daemon unavailable; actual containers, Linux/macOS, other Python versions and remote CI remain unverified.
 - Exact commands, raw outputs, package hashes, scripts and screenshot: reports/readiness-20261117-68e5ed73/REPORT.md and adjacent evidence.
+
+## Dashboard application fixture — 2026-11-19
+
+- Created a separate fictional LedgerFlow Git repository at .test-runs/ledgerflow-dashboard-demo; no MergeRisk application code changed. Includes tenant-scoped SQLite billing, idempotent invoices, transactional outbox, HMAC webhooks, durable leases, a local authenticated WSGI API and tests.
+- platform/refactor (9 tests) and feature/renewal-worker (13 tests) independently pass. Their textually clean merge fails four tests; MergeRisk verifies two AUTO repairs, one SUGGEST rename and one REPORT_ONLY required-currency argument. Candidate execution confirms two remaining errors after AUTO and one after accepting the rename; unsafe commit creation refused.
+- platform/import-cleanup versus feature/outbox-export produces one AUTO import repair, with all 10 tests passing in the repaired candidate. main versus feature/outbox-export is a verified clean control. demo/broken-merge retains the deliberately broken combined tree for manual inspection.
+- Checkout left clean on platform/refactor. Synthetic data only, no real payments or remote services. Evidence: .test-runs/ledgerflow-dashboard-demo-verification.json; repeatable one-shot generator and verification scripts alongside it.
