@@ -248,9 +248,12 @@ class GlobalStateResolver:
             module = ImportResolver.module_name(path)
             for function, node, enclosing in self._functions(tree, module):
                 local, declared_global, _nonlocal, function_imports = _FunctionLocals(node).collect(node)
-                # Names bound by an enclosing function are closure variables here, not module globals.
-                for outer in enclosing:
-                    local |= _FunctionLocals(outer).collect(outer)[0] - declared_global
+                # A nearer global declaration prevents farther local bindings from becoming closure variables.
+                global_names = set(declared_global)
+                for outer in reversed(enclosing):
+                    outer_local, outer_global, _, _ = _FunctionLocals(outer).collect(outer)
+                    local |= outer_local - global_names
+                    global_names.update(outer_global)
                 imports = {
                     binding.local_name for binding in project_imports[path]
                     if binding.scope == module or binding.scope == function

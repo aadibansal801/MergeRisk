@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mergerisk-beta
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: MERGERISK_ORIGIN
+        sync: false
+      - key: MERGERISK_DATABASE_URL
+        sync: false
+      - key: MERGERISK_GITHUB_CLIENT_ID
+        sync: false
+      - key: MERGERISK_GITHUB_CLIENT_SECRET
+        sync: false
+      - key: MERGERISK_SESSION_SECRET
+        generateValue: true
+      - key: MERGERISK_BETA_GITHUB_IDS
+        sync: false

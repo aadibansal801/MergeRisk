@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from mergerisk.source import decode_source
+
 from .plumbing import read_blobs, run_git, tree_entries, validate_path
 
 
@@ -47,13 +49,10 @@ class GitSnapshotReader:
         return self._blobs[entry[2]]
 
     def read_blob_at(self, commit_or_tree: str, file_path: str) -> str | None:
-        import io
-        import tokenize
         data = self.read_blob_bytes(commit_or_tree, file_path)
         if data is None:
             return None
-        encoding, _ = tokenize.detect_encoding(io.BytesIO(data).readline)
-        return data.decode(encoding)
+        return decode_source(data)
 
     def list_files_at(self, commit_or_tree: str) -> list[str]:
         return sorted(self._entries(commit_or_tree))

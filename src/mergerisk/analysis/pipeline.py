@@ -101,6 +101,10 @@ class AnalysisOrchestrator:
         findings = combine_findings(findings, mechanical)
         # Syntax issues already have canonical findings. Report malformed files as unsupported coverage.
         notes = ["Analysis used the canonical Tier A Python pipeline."]
+        if ((context.base == context.left and candidate_sources == right_sources)
+                or (context.base == context.right and candidate_sources == left_sources)):
+            findings = []
+            notes.append("The merge preserves the descendant snapshot. Any defects existed before the merge.")
         notes.extend(mechanical_notes)
         if parse_errors:
             notes.extend(f"Unsupported parse construct at {path}:{error.lineno}: {error.msg}" for path, error in parse_errors)

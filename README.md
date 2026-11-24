@@ -2,6 +2,8 @@
 
 A local-first semantic Git merge assistant for Python. Catch mechanical integration errors that survive a clean textual merge, inspect exact repairs, and explicitly create a controlled merge commit.
 
+The hosted beta analyzes public GitHub repositories and offers verified repair patches through the browser. See the [hosted deployment and access contract](docs/HOSTED_DEPLOYMENT.md).
+
 ## Three-command quickstart
 
 Requires Python 3.10+, Git 2.43+, and an existing local Git repository. Run with your intended Python environment active:

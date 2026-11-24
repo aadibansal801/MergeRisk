@@ -113,6 +113,24 @@ def outer():
     assert [(a.function, a.kind) for a in result.accesses] == [("m.outer.inner", GlobalAccessKind.WRITE)]
 
 
+def test_intervening_global_declaration_overrides_farther_local_binding():
+    result = GlobalStateResolver().analyze({"m.py": """limit = 1
+def outer():
+    limit = 2
+    def middle():
+        global limit
+        def reads_global():
+            return limit
+        def binds_local():
+            limit = 3
+            def reads_local():
+                return limit
+"""})
+    assert [(a.symbol, a.function, a.kind) for a in result.accesses] == [
+        ("m.limit", "m.outer.middle.reads_global", GlobalAccessKind.READ),
+    ]
+
+
 def test_lambda_parameter_shadows_module_global():
     result = GlobalStateResolver().analyze({"m.py": """x = 0
 def use(items):

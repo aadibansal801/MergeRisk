@@ -5,9 +5,7 @@ import ast
 import copy
 import difflib
 import hashlib
-import io
 import re
-import tokenize
 from dataclasses import dataclass, field, replace
 
 from mergerisk.analysis.pipeline import AnalysisOrchestrator
@@ -18,19 +16,11 @@ from mergerisk.rules.tier_a import TierAContext, _binding_error, _call_node, _fu
 from mergerisk.semantic.call_graph import CallGraphBuilder
 from mergerisk.semantic.imports import ImportResolver
 from mergerisk.semantic.python_adapter import inspect_python
+from mergerisk.source import decode_source, source_encoding
 
 
 def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
-
-
-def decode_source(data: bytes) -> str:
-    encoding, _ = tokenize.detect_encoding(io.BytesIO(data).readline)
-    return data.decode(encoding)
-
-
-def source_encoding(data: bytes) -> str:
-    return tokenize.detect_encoding(io.BytesIO(data).readline)[0]
 
 
 _LINE_END = re.compile(r"\r\n|\n|\r")
@@ -48,12 +38,13 @@ def source_lines(text: str) -> list[str]:
 
 
 def byte_offset(data: bytes, line: int, utf8_column: int = 0) -> int:
-    text = decode_source(data)
+    encoding = source_encoding(data)
+    text = data.decode(encoding)
     lines = source_lines(text)
     before = "".join(lines[:line - 1])
     if line <= len(lines):
         before += lines[line - 1].encode("utf-8")[:utf8_column].decode("utf-8")
-    return len(before.encode(source_encoding(data)))
+    return len(before.encode(encoding))
 
 
 @dataclass(frozen=True)

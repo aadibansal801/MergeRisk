@@ -153,6 +153,54 @@ class ShadowingAndRelativeLevelTests(unittest.TestCase):
         call = next(site for site in calls if site.callee_expr == "helper")
         self.assertEqual(call.status, ResolutionStatus.RESOLVED)
 
+    def test_nested_parameter_shadows_enclosing_import(self) -> None:
+        calls = CallGraphBuilder().build_from_sources({
+            "helpers.py": "def helper():\n    pass\n",
+            "app.py": """def outer():
+    from helpers import helper
+    def shadowed(helper):
+        helper()
+    def inherited():
+        helper()
+""",
+        })
+        by_caller = {site.caller_symbol: site for site in calls if site.callee_expr == "helper"}
+        self.assertEqual(by_caller["app.outer.shadowed"].status, ResolutionStatus.UNRESOLVED)
+        self.assertIsNone(by_caller["app.outer.shadowed"].resolved_target)
+        self.assertEqual(by_caller["app.outer.inherited"].resolved_target.qualified_name, "helpers.helper")
+
+    def test_class_body_import_shadows_enclosing_parameter(self) -> None:
+        calls = CallGraphBuilder().build_from_sources({
+            "helpers.py": "def helper():\n    pass\n",
+            "app.py": """def outer(helper):
+    class Inner:
+        from helpers import helper
+        helper()
+""",
+        })
+        call = next(site for site in calls if site.callee_expr == "helper")
+        self.assertEqual(call.status, ResolutionStatus.RESOLVED)
+        self.assertEqual(call.resolved_target.qualified_name, "helpers.helper")
+
+    def test_parameter_shadows_same_module_class(self) -> None:
+        calls = CallGraphBuilder().build_from_sources({
+            "app.py": """class Formatter:
+    @staticmethod
+    def text(value):
+        return str(value)
+
+def shadowed(Formatter):
+    return Formatter.text(1)
+
+def unshadowed():
+    return Formatter.text(1)
+""",
+        })
+        by_caller = {site.caller_symbol: site for site in calls if site.callee_expr == "Formatter.text"}
+        self.assertEqual(by_caller["app.shadowed"].status, ResolutionStatus.UNRESOLVED)
+        self.assertIsNone(by_caller["app.shadowed"].resolved_target)
+        self.assertEqual(by_caller["app.unshadowed"].resolved_target.qualified_name, "app.Formatter.text")
+
     def test_relative_import_beyond_top_level_package_is_not_resolved(self) -> None:
         resolver = ImportResolver({"pkg/mod.py", "other.py"})
         self.assertEqual(resolver._absolute_from_module("pkg/mod.py", "other", 2), "")

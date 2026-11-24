@@ -1,0 +1,23 @@
+# Hosted MergeRisk beta
+
+The website runs on FastAPI and uses existing MergeRisk static analysis. An invited user signs in with GitHub, enters a public repository URL and two branch names, and receives findings about the recorded revisions. An exact, statically verified repair can be downloaded as a Git patch against the candidate merge tree. The local CLI and dashboard continue to use the local contract.
+
+## Runtime and data
+
+- One web process serves the UI and API and runs one analysis worker at a time. The GitHub fetch and analysis run in a disposable child process with service secrets excluded. Use Git 2.43 or newer. The Dockerfile checks Git during the build.
+- Accept public `https://github.com/owner/repo` URLs and explicit branches. Fetch only the requested histories. The hosted worker uses static analysis and a disposable Git index to verify exported patch bytes and discard its source workspace.
+- Store job metadata, finding excerpts and verified patches in PostgreSQL for up to 24 hours while the service is active. The website also lets the owner delete completed runs. Treat patches and finding excerpts as source data. Keep request URLs, OAuth values, repository text and patches out of production logs.
+- Admission is capped at one active job per user, four active jobs globally, five submissions per user per hour and fifty per day. A stopped running job becomes a visible failure after its lease expires. The user submits a new run if they want to compare the current branch tips. Queued jobs survive restarts.
+- A free host can sleep or hit its quotas. The worker checks for pending work on startup and when users check or submit runs. Use a managed PostgreSQL endpoint with verified TLS, independent of instance disk.
+
+## Configuration
+
+The Docker image starts the hosted app on `$PORT` and exposes `/healthz`. Use `render.yaml` or a free Docker web service pointing at the verified deployment branch. Supply the following in the provider's environment settings.
+
+- `MERGERISK_ORIGIN` is the exact HTTPS origin, without a trailing slash.
+- `MERGERISK_DATABASE_URL` is a PostgreSQL connection string with `sslmode=verify-full`. Use the provider's CA path through `sslrootcert` when it is not trusted by the platform certificate store.
+- `MERGERISK_GITHUB_CLIENT_ID` and `MERGERISK_GITHUB_CLIENT_SECRET` belong to a dedicated GitHub OAuth App. Set its callback to `<origin>/auth/github/callback`. Login uses PKCE and requests no repository scopes.
+- `MERGERISK_SESSION_SECRET` is a random value of at least 32 bytes. Generate it in the deployment environment.
+- `MERGERISK_BETA_GITHUB_IDS` contains comma-separated numeric GitHub account IDs.
+
+After deploy, confirm `/healthz`, then run an invited account through sign-in, analysis and patch download. Verify account isolation with a second invited account, then check queued and interrupted jobs across a restart. Record the exact release revision, failures and verified fixes. Private repository analysis requires a separate GitHub App authorization and retention review.

@@ -216,7 +216,7 @@ class _CallCollector(ast.NodeVisitor):
         self.scopes = [model.module_name] if model.module_name else ["__root__"]
         self.class_scopes: list[str] = []
         self.function_scopes: list[str] = []
-        self.local_bindings: list[set[str]] = []
+        self.local_bindings: list[tuple[str | None, set[str]]] = []
         self.caller = self.scopes[0]
         self.calls: list[CallSite] = []
 
@@ -258,7 +258,7 @@ class _CallCollector(ast.NodeVisitor):
         self.scopes.append(node.name)
         self.caller = qualified_name
         self.function_scopes.append(qualified_name)
-        self.local_bindings.append(_LocalBindingCollector(node).collect(node))
+        self.local_bindings.append((qualified_name, _LocalBindingCollector(node).collect(node)))
         for statement in node.body:
             self.visit(statement)
         self.local_bindings.pop()
@@ -275,7 +275,7 @@ class _CallCollector(ast.NodeVisitor):
             self.bindings,
             ".".join(self.scopes),
             self.function_scopes,
-            set().union(*self.local_bindings) if self.local_bindings else set(),
+            self.local_bindings,
         )
         self.calls.append(CallSite(
             caller_symbol=self.caller,
@@ -304,7 +304,7 @@ class _CallCollector(ast.NodeVisitor):
                 *((node.args.kwarg,) if node.args.kwarg is not None else ()),
             )
         }
-        self.local_bindings.append(parameters)
+        self.local_bindings.append((None, parameters))
         self.visit(node.body)
         self.local_bindings.pop()
 
@@ -393,33 +393,31 @@ class CallGraphBuilder:
         bindings: list[ImportBinding],
         lexical_scope: str,
         function_scopes: list[str],
-        local_names: set[str],
+        local_bindings: list[tuple[str | None, set[str]]],
     ) -> tuple[ResolutionStatus, SymbolDefinition | None, list[SymbolDefinition]]:
         """Resolve a call conservatively, retaining all plausible candidates."""
         dotted_name = self._dotted_name(callee)
         if dotted_name is None:
             return ResolutionStatus.AMBIGUOUS, None, self._dynamic_candidates(callee)
-        root_name = dotted_name.partition(".")[0]
-        if root_name != "self":
-            # A parameter or local assignment shadows a module/class-level import binding.
-            bindings = [
-                binding for binding in bindings
-                if binding.local_name != root_name
-                or root_name not in local_names
-                or any(
-                    binding.scope == scope or (binding.scope or "").startswith(f"{scope}.")
-                    for scope in function_scopes
-                )
-            ]
+        root, _, suffix = dotted_name.partition(".")
+        local_binding = next((frame for frame in reversed(local_bindings) if root in frame[1]), None)
+        if local_binding is not None:
+            # The nearest local binding hides imports and definitions from outer scopes.
+            visible_scopes = {local_binding[0]}
+            if local_binding[0] is not None and lexical_scope == current_class:
+                visible_scopes.add(lexical_scope)
+            bindings = [binding for binding in bindings if binding.scope in visible_scopes]
         if isinstance(callee, ast.Name):
             binding = self._binding_for_name(bindings, callee.id, lexical_scope)
             if binding is not None:
                 return self._resolve_binding_call(binding, "", callee.id)
-            if callee.id in local_names:
+            if local_binding is not None:
+                scope = local_binding[0]
+                if scope is None:
+                    return ResolutionStatus.UNRESOLVED, None, []
                 nested_definitions = [
                     definition
-                    for function_scope in reversed(function_scopes)
-                    for definition in self.symbol_table.lookup_all_exact(f"{function_scope}.{callee.id}")
+                    for definition in self.symbol_table.lookup_all_exact(f"{scope}.{callee.id}")
                     if not definition.is_method
                 ]
                 if len(nested_definitions) == 1:
@@ -450,7 +448,6 @@ class CallGraphBuilder:
                 return ResolutionStatus.EXTERNAL, None, []
             return ResolutionStatus.UNRESOLVED, None, []
 
-        root, _, suffix = dotted_name.partition(".")
         if root == "self":
             method_name = suffix
             candidates = [
@@ -467,6 +464,8 @@ class CallGraphBuilder:
         binding = self._binding_for_name(bindings, root, lexical_scope)
         if binding is not None:
             return self._resolve_binding_call(binding, suffix, dotted_name)
+        if local_binding is not None:
+            return ResolutionStatus.UNRESOLVED, None, []
 
         same_module_name = f"{module_name}.{dotted_name}" if module_name else dotted_name
         same_module = self.symbol_table.lookup_all_exact(same_module_name)

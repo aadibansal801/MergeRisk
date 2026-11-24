@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MergeRisk</title>
+  {% if user %}<meta name="csrf-token" content="{{ user.csrf }}">{% endif %}
+  <link rel="stylesheet" href="/assets/hosted.css">
+  {% if user %}<script src="/assets/hosted.js" defer></script>{% endif %}
+</head>
+<body>
+  <header class="bar">
+    <div class="wrap row">
+      <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>MergeRisk</a>
+      {% if user %}<div class="account"><span>{{ user.login }}</span><button type="button" class="quiet" id="logout">Sign out</button></div>{% endif %}
+    </div>
+  </header>
+  <main class="wrap">
+    {% if user %}
+    <section class="heading">
+      <h1>Analyze a merge</h1>
+      <p>Check what changes when two branches come together.</p>
+    </section>
+    <div class="workspace">
+      <section class="panel input-panel" aria-labelledby="input-title">
+        <h2 id="input-title">Repository</h2>
+        <form id="analyze">
+          <label for="repository">Public GitHub repository URL</label>
+          <input id="repository" name="repository" type="url" maxlength="256" placeholder="https://github.com/owner/repo" required>
+          <div class="branches">
+            <div><label for="target">Target branch</label><input id="target" name="target" maxlength="255" placeholder="main" required></div>
+            <div><label for="source">Source branch</label><input id="source" name="source" maxlength="255" placeholder="feature/update" required></div>
+          </div>
+          <button class="primary" type="submit">Run analysis</button>
+        </form>
+      </section>
+      <section class="panel" aria-labelledby="runs-title">
+        <h2 id="runs-title">Recent analyses</h2>
+        <p id="status" role="status">Loading analyses…</p>
+        <ul id="runs" class="runs"></ul>
+      </section>
+    </div>
+    <section class="panel report" id="report" aria-labelledby="report-title" hidden>
+      <div class="row report-head"><div><h2 id="report-title">Analysis report</h2><p id="report-status" role="status"></p></div><button class="quiet" type="button" id="delete-run" hidden>Delete run</button></div>
+      <dl id="revisions" class="revisions" hidden></dl>
+      <p id="coverage" hidden></p>
+      <ul class="findings" id="findings"></ul>
+      <div id="patch" hidden><a class="primary" id="patch-link" download>Download verified patch</a><p>Apply this patch to the merge candidate for the commits above.</p></div>
+    </section>
+    <noscript>Enable JavaScript to run an analysis and view its report.</noscript>
+    {% else %}
+    <section class="sign-in panel">
+      <h1>See what a merge would break</h1>
+      <p>Compare branches from a public GitHub repository. Review Python findings and download verified repairs.</p>
+      {% if login_error %}<p class="notice" role="alert">GitHub sign-in failed. Please try again.</p>{% endif %}
+      {% if invite_error %}<p class="notice" role="alert">This GitHub account does not have beta access.</p>{% endif %}
+      <a class="primary" href="/auth/github">Sign in with GitHub</a>
+    </section>
+    {% endif %}
+  </main>
+</body>
+</html>

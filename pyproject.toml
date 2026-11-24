@@ -14,7 +14,8 @@ dependencies = ["fastapi>=0.163.1,<0.164", "uvicorn>=0.54,<0.55", "jinja2>=3.1.6
 mergerisk = "mergerisk.cli:main"
 
 [project.optional-dependencies]
-test = ["pytest>=8,<10", "httpx>=0.27,<0.29", "build>=1,<2"]
+test = ["pytest>=8,<10", "httpx>=0.27,<0.29", "build>=1,<2", "hypothesis>=6,<7"]
+hosted = ["psycopg[binary]>=3.3,<4"]
 
 [tool.setuptools]
 include-package-data = false

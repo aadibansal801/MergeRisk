@@ -23,6 +23,26 @@ def test_real_clean_git_merge_with_missing_import(tmp_path):
     assert assembler.resolve_commit("HEAD") == revisions["left"]
 
 
+def test_contained_branch_does_not_report_a_preexisting_deleted_symbol(tmp_path):
+    revisions = create_sample(tmp_path)
+    broken = b"def call():\n    return helper()\n"
+    (tmp_path / "app.py").write_bytes(b"def helper():\n    return 1\n\n" + broken)
+    run_git(tmp_path, ["commit", "-am", "base with a resolved call"])
+    run_git(tmp_path, ["branch", "unchanged"])
+    (tmp_path / "app.py").write_bytes(broken)
+    run_git(tmp_path, ["commit", "-am", "delete local helper before merging"])
+    service = MergeService(tmp_path)
+
+    for left, right in [("target", "unchanged"), ("unchanged", "target")]:
+        preview = service.preview(left, right)
+        assert preview.scenario.base_commit in (preview.scenario.left_commit, preview.scenario.right_commit)
+        assert preview.versions["merge"]["app.py"] == broken
+        assert not preview.original.findings
+        assert not preview.repair.plans
+        assert any(defect["detail"].endswith(":helper") for defect in preview.preexisting)
+    assert service.assembler.resolve_commit("source") == revisions["right"]
+
+
 def test_controlled_commit_has_exact_repaired_bytes_and_two_parents(tmp_path):
     revisions = create_sample(tmp_path)
     service = MergeService(tmp_path)
