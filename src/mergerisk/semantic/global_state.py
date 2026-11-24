@@ -86,6 +86,25 @@ class _FunctionLocals(ast.NodeVisitor):
     def visit_ClassDef(self, node: ast.ClassDef) -> None: self.names.add(node.name)
     def visit_Lambda(self, node: ast.Lambda) -> None: return
 
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        if node.name:
+            self.names.add(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchAs(self, node: ast.MatchAs) -> None:
+        if node.name:
+            self.names.add(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchStar(self, node: ast.MatchStar) -> None:
+        if node.name:
+            self.names.add(node.name)
+
+    def visit_MatchMapping(self, node: ast.MatchMapping) -> None:
+        if node.rest:
+            self.names.add(node.rest)
+        self.generic_visit(node)
+
     def collect(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> tuple[set[str], set[str], set[str], set[str]]:
         for statement in node.body:
             self.visit(statement)
@@ -158,6 +177,35 @@ class _AccessCollector(ast.NodeVisitor):
             return
         self.generic_visit(node)
 
+    def _visit_nested_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        # The nested body has its own scope and is analyzed as its own function; only the
+        # decorators, defaults, and annotations evaluate in this scope.
+        for expression in node.decorator_list:
+            self.visit(expression)
+        self.visit(node.args)
+        if node.returns is not None:
+            self.visit(node.returns)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._visit_nested_function(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._visit_nested_function(node)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        self.visit(node.args)
+        parameters = {
+            item.arg for item in (
+                *node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs,
+                *((node.args.vararg,) if node.args.vararg else ()),
+                *((node.args.kwarg,) if node.args.kwarg else ()),
+            )
+        }
+        previous_local, previous_shadowed = self.local, self.shadowed
+        self.local, self.shadowed = self.local | parameters, self.shadowed | parameters
+        self.visit(node.body)
+        self.local, self.shadowed = previous_local, previous_shadowed
+
     def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, (ast.Attribute, ast.Subscript)):
             root = self._root_name(node.func)
@@ -198,8 +246,11 @@ class GlobalStateResolver:
         unresolved = 0
         for path, tree, names in parsed:
             module = ImportResolver.module_name(path)
-            for function, node in self._functions(tree, module):
+            for function, node, enclosing in self._functions(tree, module):
                 local, declared_global, _nonlocal, function_imports = _FunctionLocals(node).collect(node)
+                # Names bound by an enclosing function are closure variables here, not module globals.
+                for outer in enclosing:
+                    local |= _FunctionLocals(outer).collect(outer)[0] - declared_global
                 imports = {
                     binding.local_name for binding in project_imports[path]
                     if binding.scope == module or binding.scope == function
@@ -216,15 +267,27 @@ class GlobalStateResolver:
 
     @staticmethod
     def _functions(tree: ast.Module, module: str):
-        found: list[tuple[str, ast.FunctionDef | ast.AsyncFunctionDef]] = []
+        found: list[tuple[str, ast.FunctionDef | ast.AsyncFunctionDef, tuple[ast.FunctionDef | ast.AsyncFunctionDef, ...]]] = []
 
-        def walk(body: list[ast.stmt], scope: tuple[str, ...]) -> None:
+        def walk(
+            body: list[ast.stmt],
+            scope: tuple[str, ...],
+            enclosing: tuple[ast.FunctionDef | ast.AsyncFunctionDef, ...],
+        ) -> None:
             for statement in body:
                 if isinstance(statement, ast.ClassDef):
-                    walk(statement.body, (*scope, statement.name))
+                    walk(statement.body, (*scope, statement.name), enclosing)
                 elif isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    found.append((".".join((*scope, statement.name)), statement))
-                    walk(statement.body, (*scope, statement.name))
+                    found.append((".".join((*scope, statement.name)), statement, enclosing))
+                    walk(statement.body, (*scope, statement.name), (*enclosing, statement))
+                else:
+                    # Definitions may sit inside if/try/for/while/with/match blocks.
+                    for field in ("body", "orelse", "finalbody"):
+                        walk(getattr(statement, field, None) or [], scope, enclosing)
+                    for handler in getattr(statement, "handlers", None) or []:
+                        walk(handler.body, scope, enclosing)
+                    for case in getattr(statement, "cases", None) or []:
+                        walk(case.body, scope, enclosing)
 
-        walk(tree.body, (module,) if module else ())
+        walk(tree.body, (module,) if module else (), ())
         return found

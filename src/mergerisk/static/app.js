@@ -11,7 +11,8 @@ async function api(url, data) {
     method: "POST", headers: {"Content-Type": "application/json", "X-CSRF-Token": csrf},
     body: JSON.stringify(data)
   });
-  const result = await response.json();
+  // Proxies, crashes and 5xx pages are not JSON; report the HTTP status instead of a parse error.
+  const result = await response.json().catch(() => ({detail: "Request failed (HTTP " + response.status + ")"}));
   if (!response.ok) {
     const detail = typeof result.detail === "string" ? result.detail : JSON.stringify(result.detail || result);
     throw new Error(detail);
@@ -38,7 +39,7 @@ for (const form of document.querySelectorAll("form[data-action]")) {
       else if (action === "analyze") { url = "/api/runs"; payload = data; }
       else if (action === "settings") {
         url = "/api/repositories/" + form.dataset.repo + "/settings";
-        payload = {image: data.image.trim(), command: JSON.parse(data.command), timeout: Number(data.timeout)};
+        payload = {image: data.image.trim(), command: data.command.trim() ? JSON.parse(data.command) : [], timeout: Number(data.timeout)};
       } else if (action === "cancel") { url = "/api/runs/" + form.dataset.run + "/cancel"; payload = {}; }
       else {
         const context = document.getElementById("run-context");

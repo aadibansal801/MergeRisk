@@ -75,7 +75,7 @@ class ImportResolver:
             return ""
         package_parts = package.split(".")
         levels_up = level - 1
-        if levels_up > len(package_parts):
+        if levels_up >= len(package_parts):
             return ""
         if levels_up:
             package_parts = package_parts[:-levels_up]

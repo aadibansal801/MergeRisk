@@ -114,3 +114,29 @@ def test_repeated_calls_have_one_diagnostic_and_atomic_keyword_edits():
     assert result.validation == "static_verified", result.rejection
     assert len(result.plans[0].edits) == 2
     assert b"return [fetch(deadline=1), fetch(deadline=2)]" in result.candidate["app.py"]
+
+
+def test_form_feed_and_unicode_separators_do_not_shift_byte_offsets():
+    # str.splitlines() treats \x0c and U+2028 as line ends; Python's tokenizer does not.
+    from mergerisk.repair import byte_offset
+    for data in (b"x = 1\n\x0c\nimport os\nprint(json)\n", b"s = '\xe2\x80\xa8'\nprint(json)\n", b"a = 1\x0c\rprint(json)\n"):
+        import ast
+        node = ast.parse(data.decode()).body[-1]
+        assert data[byte_offset(data, node.lineno, node.col_offset):].startswith(b"print")
+
+
+def test_form_feed_in_source_does_not_crash_proposals_or_misplace_imports():
+    base = b"def old_name(x):\n return x\n\x0c\n"
+    left = base.replace(b"old_name", b"new_name")
+    right = base + b"def g():\n return old_name(2)\n"
+    versions, analysis, result = exercise([base, left, right, left + right[len(base):]])
+    suggestion = next(p for p in result.plans if p.tier == "SUGGEST")
+    accepted = repair_candidate(versions, CONTEXT, analysis, {suggestion.id})
+    assert accepted.validation == "static_verified", accepted.rejection
+    assert b"return new_name(2)" in accepted.candidate["app.py"]
+    base = b"import json\n\x0c\nimport os\n\ndef a():\n    return os\n"
+    right = base + b"def b():\n    return json.dumps(1)\n"
+    left = base.replace(b"import json\n", b"")
+    _, _, result = exercise([base, left, right, left + right[len(base):]])
+    assert result.validation == "static_verified", result.rejection
+    assert result.candidate["app.py"].startswith(b"\x0c\nimport json\nimport os\n")

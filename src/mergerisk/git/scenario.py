@@ -80,6 +80,9 @@ class GitScenarioAssembler:
             ) from error
         except OSError as error:
             raise GitCommandError(f"could not execute Git: {error}") from error
+        except RuntimeError as error:
+            # bounded_run reports timeouts and output-limit overruns as RuntimeError.
+            raise GitCommandError(f"{error}: {arguments!r}") from error
         if check and result.returncode != 0:
             detail = result.stderr.strip() or result.stdout.strip() or "no diagnostic output"
             raise GitCommandError(f"git {' '.join(arguments)} failed ({result.returncode}): {detail}")
@@ -137,7 +140,15 @@ class GitScenarioAssembler:
         first = output_parts[0].strip() if output_parts else ""
         merge_tree = first if _OBJECT_ID_PATTERN.fullmatch(first) else None
         is_clean = result.returncode == 0
-        conflict_files = [] if is_clean else self._parse_conflict_files_from_messages(result.stdout)
+        conflict_files: list[str] = []
+        if not is_clean:
+            # With -z the conflicted paths (of every conflict kind, e.g. modify/delete) follow the tree ID
+            # up to the first empty field; message text is only a fallback.
+            for part in output_parts[1:]:
+                if not part:
+                    break
+                conflict_files.append(part)
+            conflict_files = sorted(set(conflict_files)) or self._parse_conflict_files_from_messages(result.stdout)
         return merge_tree, is_clean, conflict_files
 
     def _safe_merge_environment(self) -> tuple[dict[str, str], list[str]]:

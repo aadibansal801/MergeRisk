@@ -62,6 +62,11 @@ class SettingsInput(Input):
     timeout: int = Field(default=30, ge=1, le=120)
 
 
+def _same(supplied: str, secret: str) -> bool:
+    # compare_digest raises TypeError (a 500) for non-ASCII str; compare the encoded bytes instead.
+    return secrets.compare_digest(supplied.encode("utf-8"), secret.encode("utf-8"))
+
+
 def create_app(state_dir: Path | None = None, *, capacity=4):
     history = History(state_dir or Path.home() / ".mergerisk")
     jobs = Jobs(history, capacity)
@@ -85,12 +90,12 @@ def create_app(state_dir: Path | None = None, *, capacity=4):
         expected_origin = f"{request.url.scheme}://{request.headers.get('host')}"
         if origin and origin != expected_origin:
             return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
-        authenticated = secrets.compare_digest(request.cookies.get("mergerisk_session", ""), session)
+        authenticated = _same(request.cookies.get("mergerisk_session", ""), session)
         public = request.url.path == "/" or request.url.path.startswith("/static/")
         if not authenticated and not (request.method == "GET" and public):
             return JSONResponse({"detail": "Open the dashboard home page to establish a local session"}, status_code=401)
         if request.method not in {"GET", "HEAD"}:
-            if not secrets.compare_digest(request.headers.get("x-csrf-token", ""), csrf):
+            if not _same(request.headers.get("x-csrf-token", ""), csrf):
                 return JSONResponse({"detail": "Missing or invalid CSRF token"}, status_code=403)
             if request.headers.get("content-type", "").split(";")[0] != "application/json":
                 return JSONResponse({"detail": "Use application/json"}, status_code=415)

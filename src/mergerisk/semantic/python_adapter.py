@@ -52,8 +52,12 @@ class PythonModel:
 
 @lru_cache(maxsize=256)
 def parse_python(source: str, path: str) -> ast.Module:
-    compile(source, path, "exec")  # Validate compiler scope errors too; never execute the code object.
-    return ast.parse(source, filename=path)
+    try:
+        compile(source, path, "exec")  # Validate compiler scope errors too; never execute the code object.
+        return ast.parse(source, filename=path)
+    except RecursionError as error:
+        # Pathologically nested source cannot be compiled either; report it as unparseable, not a crash.
+        raise SyntaxError("source is too deeply nested to parse") from error
 
 
 @lru_cache(maxsize=256)

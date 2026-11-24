@@ -111,3 +111,24 @@ def calculate(value):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RedefinedEntityTests(unittest.TestCase):
+    def test_changing_property_getter_is_detected_when_setter_shares_the_name(self) -> None:
+        base = (
+            "class A:\n"
+            "    @property\n"
+            "    def x(self):\n"
+            "        return 1\n"
+            "    @x.setter\n"
+            "    def x(self, value):\n"
+            "        pass\n"
+        )
+        branch = base.replace("return 1", "return 2")
+        edits = ChangeAttributionEngine().diff_entities(base, branch, "a.py", BranchRole.LEFT)
+        self.assertEqual([(e.entity_qualified_name, e.op) for e in edits], [("a.A.x", ChangeOp.MODIFY)])
+
+    def test_pathologically_nested_source_is_a_syntax_error_not_a_crash(self) -> None:
+        source = "x = " + "+".join(["1"] * 20000) + "\n"
+        with self.assertRaises(SyntaxError):
+            ChangeAttributionEngine().extract_entities(source, "big.py")

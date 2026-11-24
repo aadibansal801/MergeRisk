@@ -117,3 +117,30 @@ class V1RuleMigrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class V1SignatureMismatchProvenanceTests(unittest.TestCase):
+    def test_signature_mismatch_roles_follow_symbols_when_left_is_the_caller(self) -> None:
+        entities = {"caller": EntityInfo("caller", 1, 2), "definition": EntityInfo("definition", 5, 6)}
+        # Detector: Right changed 'definition'; Left's 'caller' calls it (left_entity=caller, right_entity=definition).
+        interaction = Interaction("signature_mismatch", "caller", "definition",
+                                  "Signature of 'definition' changed from (a) to (a, b), and Left's 'caller' calls it.")
+        finding = SignatureMismatchRule().evaluate(V1RuleContext([interaction], entities, "m.py"))[0]
+        roles = {entity.symbol: (entity.role, entity.branch) for entity in finding.entities}
+        self.assertEqual(roles["definition"], ("changed_definition", BranchRole.RIGHT))
+        self.assertEqual(roles["caller"], ("affected_caller", BranchRole.LEFT))
+
+
+class LegacySignatureChangeTests(unittest.TestCase):
+    def test_zero_parameter_signature_gaining_a_parameter_is_a_mismatch(self) -> None:
+        import ast
+        from detector.change_extractor import ChangeSet
+        from detector.interaction_analyzer import analyze_interactions
+
+        base_tree = ast.parse("def f():\n    return 1\n")
+        left_tree = ast.parse("def f(x):\n    return x\n")
+        changeset = ChangeSet(changed_by_left={"f"}, left_nodes={"f": left_tree.body[0]},
+                              added_by_right={"g"})
+        entities = {"g": EntityInfo("g", 1, 2, calls={"f"})}
+        kinds = [item.kind for item in analyze_interactions(changeset, entities, base_tree)]
+        self.assertIn("signature_mismatch", kinds)

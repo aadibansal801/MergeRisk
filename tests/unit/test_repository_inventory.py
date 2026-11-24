@@ -54,3 +54,11 @@ class RepositoryInventoryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_pathologically_nested_source_raises_syntax_error_not_recursion_error():
+    import pytest
+    from mergerisk.semantic.python_adapter import parse_python
+
+    with pytest.raises(SyntaxError):
+        parse_python("x = " + "+".join(["1"] * 20000) + "\n", "big.py")

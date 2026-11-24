@@ -341,3 +341,43 @@ def test_git_pipeline_detects_introduced_dependency_and_reports_existing_broken_
     assert result.status.value == "partial"
     assert result.coverage.unresolved_references >= 1
     assert all("never_defined" not in finding.summary for finding in result.findings)
+
+
+def test_modify_delete_conflict_lists_conflicted_path(tmp_path: Path) -> None:
+    """Non-content conflicts have no 'Merge conflict in' message but still name their path."""
+    _git(tmp_path, "init")
+    _git(tmp_path, "config", "user.name", "MergeRisk Tests")
+    _git(tmp_path, "config", "user.email", "tests@example.invalid")
+    _git(tmp_path, "branch", "-M", "main")
+    (tmp_path / "app.py").write_text("VALUE = 'base'\n", encoding="utf-8")
+    (tmp_path / "other.py").write_text("OTHER = 1\n", encoding="utf-8")
+    _commit(tmp_path, "base")
+    _git(tmp_path, "checkout", "-b", "feature-left")
+    (tmp_path / "app.py").write_text("VALUE = 'left'\n", encoding="utf-8")
+    _commit(tmp_path, "left change")
+    _git(tmp_path, "checkout", "main")
+    _git(tmp_path, "checkout", "-b", "feature-right")
+    (tmp_path / "app.py").unlink()
+    _commit(tmp_path, "right delete")
+    _git(tmp_path, "checkout", "main")
+
+    scenario = GitScenarioAssembler(tmp_path).assemble("feature-left", "feature-right")
+
+    assert scenario.is_clean is False
+    assert scenario.conflict_files == ["app.py"]
+
+
+def test_git_timeout_and_output_limit_surface_as_git_command_error(tmp_path: Path, monkeypatch) -> None:
+    """bounded_run reports timeouts as RuntimeError; the assembler must translate them."""
+    from mergerisk.git import GitCommandError
+    from mergerisk.git import scenario as scenario_module
+
+    _clean_merge_repo(tmp_path)
+    assembler = GitScenarioAssembler(tmp_path)
+
+    def timed_out(*_args, **_kwargs):
+        raise RuntimeError("Command timed out after 30s")
+
+    monkeypatch.setattr(scenario_module, "run_git", timed_out)
+    with pytest.raises(GitCommandError, match="timed out"):
+        assembler.resolve_commit("main")

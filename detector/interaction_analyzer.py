@@ -145,7 +145,7 @@ def _check_signature_mismatch(changeset: ChangeSet, entities: Dict[str, EntityIn
     interactions = []
     def _sig_differs(name: str, branch_nodes: dict[str, ast.AST]) -> bool:
         base, branch = base_sigs.get(name), branch_nodes.get(name)
-        return bool(base and branch and base != _node_signature(branch))
+        return base is not None and branch is not None and base != _node_signature(branch)
     def _desc(name: str, branch_nodes: dict[str, ast.AST]) -> str:
         base, branch = base_sigs.get(name, []), _node_signature(branch_nodes.get(name)) or []  # type: ignore
         return f"Signature of '{name}' changed from ({', '.join(base)}) to ({', '.join(branch)})"

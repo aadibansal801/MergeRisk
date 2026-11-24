@@ -204,3 +204,19 @@ def test_review_reject_and_accept_real_rename_suggestion(setup):
     assert accepted["result"]["validation"] == "static_verified"
     assert not accepted["result"]["fixed_analysis"]["findings"]
     assert "return new_name(1)" in accepted["result"]["files"]["app.py"]["fixed"]
+
+
+def test_non_ascii_session_cookie_and_csrf_token_are_rejected_not_500(setup):
+    client, headers, repo_id, repo, app = setup
+    other = TestClient(app, base_url="http://127.0.0.1", raise_server_exceptions=False)
+    response = other.get("/api/repositories", headers={"Cookie": "mergerisk_session=é".encode("latin-1")})
+    assert response.status_code == 401
+    response = client.post("/api/runs", content=b"{}", headers={"X-CSRF-Token": "é".encode("latin-1"),
+                                                                  "Content-Type": "application/json"})
+    assert response.status_code == 403
+
+
+def test_frontend_survives_non_json_errors_and_empty_runtime_command():
+    script = (Path(__file__).parents[2] / "src/mergerisk/static/app.js").read_text(encoding="utf-8")
+    assert "response.json().catch(" in script
+    assert "data.command.trim() ?" in script

@@ -111,3 +111,26 @@ def test_detached_head_analyzes_but_cannot_apply(tmp_path):
     artifact = service.create_commit(preview, expected=preview.fingerprint)
     with pytest.raises(ValueError, match="Detached"):
         service.apply(artifact, expected_head=revisions["left"])
+
+
+def test_cli_fixture_with_bad_encoding_declaration_fails_cleanly(tmp_path):
+    bad, good = tmp_path / "bad.py", tmp_path / "good.py"
+    bad.write_bytes(b"# coding: no-such-codec\nx = 1\n")
+    good.write_bytes(b"x = 1\n")
+    result = subprocess.run([sys.executable, "-m", "mergerisk", "fixture", str(bad), str(good), str(good), str(good)],
+                            capture_output=True, text=True, timeout=60)
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+    assert result.stderr.startswith("MergeRisk:")
+
+
+def test_cli_terminal_output_survives_legacy_console_encoding(tmp_path, monkeypatch):
+    import mergerisk.sample as sample
+    monkeypatch.setattr(sample, "BASE", "# 日本語 comment\n".encode() + sample.BASE)
+    monkeypatch.setattr(sample, "RIGHT", sample.BASE + b"\ndef b(x):\n    return json.dumps(x)\n")
+    create_sample(tmp_path)
+    env = {**__import__("os").environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+    result = subprocess.run([sys.executable, "-m", "mergerisk", "analyze", "--repo", str(tmp_path),
+                             "--left", "target", "--right", "source"], capture_output=True, env=env, timeout=60)
+    assert result.returncode == 3, result.stderr
+    assert b"charmap" not in result.stderr

@@ -6,6 +6,7 @@ import copy
 import difflib
 import hashlib
 import io
+import re
 import tokenize
 from dataclasses import dataclass, field, replace
 
@@ -32,9 +33,23 @@ def source_encoding(data: bytes) -> str:
     return tokenize.detect_encoding(io.BytesIO(data).readline)[0]
 
 
+_LINE_END = re.compile(r"\r\n|\n|\r")
+
+
+def source_lines(text: str) -> list[str]:
+    """Split like Python's tokenizer: only CR, LF and CRLF end a line (not form feed or U+2028)."""
+    lines, start = [], 0
+    for match in _LINE_END.finditer(text):
+        lines.append(text[start:match.end()])
+        start = match.end()
+    if start < len(text):
+        lines.append(text[start:])
+    return lines
+
+
 def byte_offset(data: bytes, line: int, utf8_column: int = 0) -> int:
     text = decode_source(data)
-    lines = text.splitlines(keepends=True)
+    lines = source_lines(text)
     before = "".join(lines[:line - 1])
     if line <= len(lines):
         before += lines[line - 1].encode("utf-8")[:utf8_column].decode("utf-8")
@@ -145,7 +160,7 @@ def _import_edit(issue: MechanicalIssue, data: bytes, sources) -> tuple[tuple[Te
         return (), "Other import changes make the historical insertion order ambiguous."
     if isinstance(site.node, ast.ImportFrom) and site.node.module == "__future__":
         return (), "Future imports change compilation semantics."
-    lines = issue.parent_source.splitlines(keepends=True)
+    lines = source_lines(issue.parent_source)
     fragment = "".join(lines[site.node.lineno - 1:site.node.end_lineno])
     parsed = ast.parse(fragment)
     if len(parsed.body) != 1 or ast.dump(parsed.body[0]) != identity:
@@ -162,7 +177,7 @@ def _import_edit(issue: MechanicalIssue, data: bytes, sources) -> tuple[tuple[Te
     else:
         # Leave BOM, shebang, coding cookie and module docstring in their original positions.
         header_line = 0
-        merged_lines = merged.source.splitlines(keepends=True)
+        merged_lines = source_lines(merged.source)
         for i, line in enumerate(merged_lines[:2]):
             if (i == 0 and line.startswith("#!")) or "coding" in line and line.lstrip().startswith("#"):
                 header_line = i + 1

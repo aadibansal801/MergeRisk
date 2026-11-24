@@ -132,3 +132,29 @@ class SemanticCallGraphTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ShadowingAndRelativeLevelTests(unittest.TestCase):
+    def test_parameter_shadows_module_level_import(self) -> None:
+        calls = CallGraphBuilder().build_from_sources({
+            "helpers.py": "def helper():\n    pass\n",
+            "app.py": "from helpers import helper\n\ndef f(helper):\n    helper()\n\ndef g():\n    helper()\n",
+        })
+        by_caller = {site.caller_symbol: site for site in calls if site.callee_expr == "helper"}
+        self.assertEqual(by_caller["app.f"].status, ResolutionStatus.UNRESOLVED)
+        self.assertIsNone(by_caller["app.f"].resolved_target)
+        self.assertEqual(by_caller["app.g"].status, ResolutionStatus.RESOLVED)
+
+    def test_function_level_import_is_not_shadowed_by_itself(self) -> None:
+        calls = CallGraphBuilder().build_from_sources({
+            "helpers.py": "def helper():\n    pass\n",
+            "app.py": "def f():\n    from helpers import helper\n    helper()\n",
+        })
+        call = next(site for site in calls if site.callee_expr == "helper")
+        self.assertEqual(call.status, ResolutionStatus.RESOLVED)
+
+    def test_relative_import_beyond_top_level_package_is_not_resolved(self) -> None:
+        resolver = ImportResolver({"pkg/mod.py", "other.py"})
+        self.assertEqual(resolver._absolute_from_module("pkg/mod.py", "other", 2), "")
+        self.assertEqual(resolver._absolute_from_module("a/b/mod.py", "x", 3), "")
+        self.assertEqual(resolver._absolute_from_module("a/b/mod.py", "x", 2), "a.x")

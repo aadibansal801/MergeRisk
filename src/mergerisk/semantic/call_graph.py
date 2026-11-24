@@ -399,6 +399,18 @@ class CallGraphBuilder:
         dotted_name = self._dotted_name(callee)
         if dotted_name is None:
             return ResolutionStatus.AMBIGUOUS, None, self._dynamic_candidates(callee)
+        root_name = dotted_name.partition(".")[0]
+        if root_name != "self":
+            # A parameter or local assignment shadows a module/class-level import binding.
+            bindings = [
+                binding for binding in bindings
+                if binding.local_name != root_name
+                or root_name not in local_names
+                or any(
+                    binding.scope == scope or (binding.scope or "").startswith(f"{scope}.")
+                    for scope in function_scopes
+                )
+            ]
         if isinstance(callee, ast.Name):
             binding = self._binding_for_name(bindings, callee.id, lexical_scope)
             if binding is not None:

@@ -47,8 +47,18 @@ def _parser():
     return parser
 
 
+def _tolerant_streams():
+    # A legacy console/pipe encoding (e.g. cp1252) must not turn non-Latin source text into a crash.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass
+
+
 def main(argv=None):
     args = _parser().parse_args(argv)
+    _tolerant_streams()
     output = getattr(args, "format", "terminal")
     artifact = None
     try:
@@ -126,7 +136,7 @@ def main(argv=None):
                 print("Reference: " + report["artifact"]["ref"])
                 print(chr(10).join(report["artifact"]["next_steps"]))
         return code
-    except (OSError, ValueError, RuntimeError) as error:
+    except (OSError, ValueError, RuntimeError, SyntaxError) as error:
         if output == "json":
             failure = {"status": "failed", "error": str(error)}
             if artifact:

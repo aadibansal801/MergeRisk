@@ -143,6 +143,19 @@ class _EntityCollector(ast.NodeVisitor):
         )
         return _EntityCollector._hash(projection)
 
+    def _record(self, name: str, kind: EntityKind, span: EntitySpan, content_hash: str) -> None:
+        """Store an entity; repeated definitions (property setters, overloads) are merged, not dropped."""
+        previous = self.entities.get(name)
+        if previous is not None:
+            _previous_kind, previous_span, previous_hash = previous
+            span = EntitySpan(
+                span.path,
+                min(previous_span.start_line, span.start_line),
+                max(previous_span.end_line, span.end_line),
+            )
+            content_hash = hashlib.sha256(f"{previous_hash}:{content_hash}".encode("utf-8")).hexdigest()
+        self.entities[name] = (kind, span, content_hash)
+
     def collect(self) -> dict[str, tuple[EntityKind, EntitySpan, str]]:
         """Return all entities in stable qualified-name order."""
         line_count = max(1, len(self.code.splitlines()))
@@ -158,7 +171,7 @@ class _EntityCollector(ast.NodeVisitor):
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         qualified_name = ".".join((*self.scope, node.name))
-        self.entities[qualified_name] = (EntityKind.CLASS, self._span(self.path, node), self._class_hash(node))
+        self._record(qualified_name, EntityKind.CLASS, self._span(self.path, node), self._class_hash(node))
         self.scope.append(node.name)
         self.scope_kinds.append(EntityKind.CLASS)
         for statement in node.body:
@@ -175,7 +188,7 @@ class _EntityCollector(ast.NodeVisitor):
     def _visit_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         qualified_name = ".".join((*self.scope, node.name))
         kind = EntityKind.METHOD if self.scope_kinds and self.scope_kinds[-1] is EntityKind.CLASS else EntityKind.FUNCTION
-        self.entities[qualified_name] = (kind, self._span(self.path, node), self._hash(node))
+        self._record(qualified_name, kind, self._span(self.path, node), self._hash(node))
         self.scope.append(node.name)
         self.scope_kinds.append(kind)
         for statement in node.body:
@@ -191,8 +204,11 @@ class ChangeAttributionEngine:
         """Extract qualified AST entities, source spans, and normalized SHA-256 hashes."""
         if not path:
             raise ValueError("path must be non-empty")
-        tree = ast.parse(code, filename=path)
-        return _EntityCollector(path, tree, code).collect()
+        try:
+            tree = ast.parse(code, filename=path)
+            return _EntityCollector(path, tree, code).collect()
+        except RecursionError as error:
+            raise SyntaxError("source is too deeply nested to analyze") from error
 
     def diff_entities(
         self,

@@ -109,8 +109,8 @@ class _V1InteractionRule(BaseRule):
             if "Right's" in reason:
                 left_role, right_role = "changed_definition", "affected_caller"
             else:
-                left_branch, right_branch = BranchRole.RIGHT, BranchRole.LEFT
-                left_role, right_role = "changed_definition", "affected_caller"
+                # "Left's '<caller>' calls it": the left symbol is the caller, the right symbol the changed definition.
+                left_role, right_role = "affected_caller", "changed_definition"
         elif self.definition.kind == "deleted_dependency":
             if "Left deleted" in reason:
                 left_role, right_role = "deleted_definition", "affected_caller"

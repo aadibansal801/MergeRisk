@@ -77,3 +77,75 @@ def test_function_local_external_import_is_not_misclassified_as_global_state():
     })
     assert result.unresolved_count == 0
     assert result.accesses == ()
+
+
+def test_nested_function_local_binding_is_not_a_parent_global_write():
+    result = GlobalStateResolver().analyze({"m.py": """X = 1
+def outer():
+    global X
+    def inner():
+        X = 5
+    return inner
+"""})
+    assert not [a for a in result.accesses if a.kind is not GlobalAccessKind.READ]
+    assert result.accesses == ()
+
+
+def test_nested_function_reads_are_attributed_once_and_respect_closures():
+    result = GlobalStateResolver().analyze({"m.py": """X = 1
+Y = 2
+def outer():
+    Y = 3
+    def inner(X):
+        return X + Y
+    return inner
+"""})
+    assert result.accesses == ()
+
+
+def test_nested_function_global_write_is_attributed_to_the_nested_function_only():
+    result = GlobalStateResolver().analyze({"m.py": """X = 1
+def outer():
+    def inner():
+        global X
+        X = 2
+"""})
+    assert [(a.function, a.kind) for a in result.accesses] == [("m.outer.inner", GlobalAccessKind.WRITE)]
+
+
+def test_lambda_parameter_shadows_module_global():
+    result = GlobalStateResolver().analyze({"m.py": """x = 0
+def use(items):
+    return sorted(items, key=lambda x: -x)
+"""})
+    assert result.accesses == ()
+
+
+def test_functions_inside_try_and_if_blocks_are_analyzed():
+    result = GlobalStateResolver().analyze({"m.py": """X = 1
+try:
+    import fast
+except ImportError:
+    def f():
+        global X
+        X = 2
+if X:
+    class C:
+        def g(self):
+            global X
+            X += 1
+"""})
+    assert sorted((a.function, a.kind.value) for a in result.accesses) == [
+        ("m.C.g", "read_write"), ("m.f", "write"),
+    ]
+
+
+def test_except_handler_name_shadows_module_global():
+    result = GlobalStateResolver().analyze({"m.py": """e = 1
+def f():
+    try:
+        pass
+    except Exception as e:
+        print(e)
+"""})
+    assert result.accesses == ()
