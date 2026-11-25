@@ -1,0 +1,45 @@
+# MergeRisk hosted beta design audit
+
+Reviewed on 2026-11-24 against commit `15f77ea9f8bafd058c914a35c64b67b1ac9046f8`. The review covers the local product contract, the planned public-repository website and the behavior of the existing analyzer it will reuse. Evidence comes from source inspection and deterministic tests against benign in-memory Python examples and existing repair fixtures in the installed Windows environment. The hosted service, live GitHub login, production Postgres, Linux resource limits and deployment were outside this baseline review. Repository findings below refer to the audited commit.
+
+The methods follow Trail of Bits’ requirement tracing and property-testing guidance, and Codex Security’s trust-boundary modeling guidance. This report is an independent source review using those references. [Spec-to-code compliance](https://github.com/trailofbits/skills/blob/main/plugins/spec-to-code-compliance/skills/spec-to-code-compliance/SKILL.md) · [Property-based testing](https://github.com/trailofbits/skills/blob/main/plugins/property-based-testing/README.md) · [Threat modeling](https://github.com/openai/codex-security/blob/main/plugins/codex-security/skills/threat-model/SKILL.md)
+
+## Release blockers for a hosted beta
+
+### H1 · Per-user authorization
+
+The local dashboard issues a process-wide session and stores a shared history. Repository registration accepts a host filesystem path. The existing read, action and export routes assume all requests belong to the same local user. Hosting this entry point would violate the website’s ownership contract. A hosted entry point needs a verified GitHub user ID and a distinct session for each user. Check job ownership when listing, reading, downloading, deleting or cancelling a run. Protect state changes with an origin check and CSRF protection, and use secure session cookies and a configured OAuth callback origin. Gate the beta on two real accounts that complete separate runs and can retrieve only their own results. [Dashboard session](../../src/mergerisk/dashboard.py#L70-L116) · [Local history](../../src/mergerisk/history.py#L20-L39) · [Dashboard routes](../../src/mergerisk/dashboard.py#L168-L215)
+
+### H2 · Repository ingestion and work limits
+
+`MergeService.preview` starts from a local repository and applies limits once it reads Git objects. A hosted job first accepts a network input and fetches history. The existing Git wrapper bounds command output and time, and snapshot reads limit blob size, neither of which bounds the volume of a remote pack written to disk. Use a disposable initialized repository with no working-tree checkout, a canonical `https://github.com/<owner>/<repo>` remote, a restricted Git environment and explicit branch refs. Enforce fetch, disk, wall-clock and concurrency budgets at the hosted boundary. Isolate workers from provider secrets and expose the static analysis path. Limit fetches to public GitHub repositories and return a clear incomplete result when history cannot establish the merge base. Never configure the beta to reuse user Git credentials or execute repository code. [Preview and blob limits](../../src/mergerisk/service.py#L56-L95) · [Git command bounds](../../src/mergerisk/git/plumbing.py#L12-L64) · [Sandbox contract](../../MERGERISK_BUILD_SPEC.md#L107-L117)
+
+### H3 · Byte-exact patch downloads
+
+The repair engine can produce a byte-exact candidate, but `RepairPlan.diff` is a Unicode display diff. It decodes file contents, removes a UTF-8 BOM during decoding and uses `splitlines()`, which treats form feed and Unicode paragraph separators as line breaks. It also lacks Git's no-final-newline metadata. I verified that the bundled BOM/CRLF candidate retains its BOM while the display diff omits it. Use a native Git patch between the synthetic merge tree and an exact repaired tree, then apply that patch to a disposable index and compare the resulting tree ID. Label the download with the merge tree and parent commit IDs so it can be applied to the matching merge candidate. [Source decoding](../../src/mergerisk/repair.py#L27-L34) · [Display diff](../../src/mergerisk/repair.py#L224-L230) · [Exact repair requirements](../../MERGERISK_BUILD_SPEC.md#L83-L91)
+
+### H4 · Durable jobs and data retention
+
+The local job executor depends on a process and SQLite on the host filesystem. It serializes full source snapshots in results. The hosted beta needs durable job state and an atomic way to claim or expire a job after a process restart. Keep checkout and object data in temporary storage. Persist only the report fields, commit IDs and patch data needed for the beta with defined expiry and deletion. Patches and diagnostics can include source excerpts, so serve them as private user-owned results and keep them out of logs. Test restart during analysis, expired or duplicate completion, database failure and simultaneous submissions at capacity. A job interrupted before resolving commits must either fail clearly or fix the inputs before retrying, so a retry cannot silently analyze different revisions. [Local queue and result storage](../../src/mergerisk/history.py#L142-L195) · [Source-bearing previews](../../src/mergerisk/service.py#L28-L53) · [Render filesystem lifecycle](https://render.com/docs/free#local-files-lost-on-redeploy)
+
+## Analyzer findings confirmed on the baseline
+
+### A1 · Incorrectly resolved calls through shadowing parameters
+
+The analyzer marks `Formatter.text()` as resolved to a same-module class method when `Formatter` is a parameter of the calling function. It also marks a nested function’s `format_value()` as resolved to a helper imported by its enclosing function, even though the nested function receives its own `format_value` parameter. I observed `RESOLVED` with the wrong definition in both checks. The first case falls through to same-module attribute lookup. The second retains the enclosing import because it belongs to an active function scope. Treat the nearest applicable binding as authoritative and leave a call through an unknown parameter unresolved. Add regressions for direct nested calls and same-module class attributes. False resolution can generate incorrect signature findings or hide real ones. [Call target lookup](../../src/mergerisk/semantic/call_graph.py#L399-L477)
+
+### A2 · Missed module-global read across nested scopes
+
+When an outer function binds a local name, an intermediate function declares that name `global`, and an inner function reads it, CPython's `symtable` identifies the inner reference as global. `GlobalStateResolver` returned zero accesses for that case. It unions local names from every enclosing function without accounting for the nearer `global` declaration. Respect enclosing scope order and global declarations, and add a nested-scope regression. A missed read can suppress a shared-global diagnostic. [Global access classification](../../src/mergerisk/semantic/global_state.py#L246-L264)
+
+### A3 · Ambiguous completion signals
+
+Serializing a textual conflict gives `analysis=null` and `diagnosis=no_supported_findings`. The pipeline also reports `success` with zero analyzed files when all four Python inventories are empty. I observed both states with direct API calls. The hosted UI must prioritize textual conflicts, unsupported inputs and incomplete coverage over an empty findings list. A repository with no eligible Python files needs an explicit message, and a conflict should present its paths without a clean diagnosis. [Preview serialization](../../src/mergerisk/service.py#L28-L38) · [Analysis status](../../src/mergerisk/analysis/pipeline.py#L115-L126)
+
+## Verified checks and remaining evidence
+
+- Checked 27 combinations of UTF-8, UTF-8 BOM and Latin-1 with LF, CRLF and CR plus ordinary, form feed or non-ASCII source text. In every case `byte_offset` located the expected bytes for the following Python identifier.
+- Verified `static_verified` and byte-for-byte expected candidates for the `json`, `bom_crlf` and `encoding_cookie` repair fixtures. The candidate bytes and the display diff were inspected independently.
+- Verified the two incorrect call resolutions, the missing global read and the two ambiguous completion states above. These are observations on the audited revision, with fixes and their regressions tracked separately.
+- Remediated A1 and A2 by preserving binding scope order. The three defect regressions failed on the baseline and passed after the fix. A fourth regression guards class-body imports. All 72 focused tests, both evaluators and the safe and unsafe Git demo passed after remediation.
+- A release review still needs the hosted implementation and actual deployment. Exercise owner isolation, login and logout, repository limits, network errors, interrupted jobs, patch round trips, expiration and browser workflow on the deployed service. Run the installed test suite, both evaluators and the existing demos on the release candidate. Record the actual results before declaring a release gate passed. [Repository verification history](../PROGRESS.md)
