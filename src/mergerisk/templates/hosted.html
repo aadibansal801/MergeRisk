@@ -1,3 +1,24 @@
+{% macro merge_flow(id) %}
+<div class="diagram-scroll">
+  <svg class="merge-flow" viewBox="0 0 300 124" role="img" aria-labelledby="{{ id }}-title {{ id }}-desc">
+    <title id="{{ id }}-title">Branch comparison</title>
+    <desc id="{{ id }}-desc">The source branch and the target branch are combined in a merge preview for analysis.</desc>
+    <defs>
+      <marker id="{{ id }}-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+        <path class="diagram-arrow" d="M1 1 L6 3.5 L1 6"/>
+      </marker>
+    </defs>
+    <path class="diagram-edge" d="M108 28 H136 Q144 28 144 36 V42 Q144 50 152 50 H179" marker-end="url(#{{ id }}-arrow)"/>
+    <path class="diagram-edge" d="M108 96 H136 Q144 96 144 88 V82 Q144 74 152 74 H179" marker-end="url(#{{ id }}-arrow)"/>
+    <rect class="diagram-node" x="4" y="8" width="104" height="40" rx="5" stroke="var(--control)"/>
+    <rect class="diagram-node" x="4" y="76" width="104" height="40" rx="5" stroke="var(--control)"/>
+    <rect class="diagram-node diagram-output" x="180" y="36" width="116" height="52" rx="5" stroke="var(--accent)"/>
+    <text x="56" y="28">Source branch</text>
+    <text x="56" y="96">Target branch</text>
+    <text x="238" y="63">Merge preview</text>
+  </svg>
+</div>
+{% endmacro %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -9,54 +30,136 @@
   {% if user %}<script src="/assets/hosted.js" defer></script>{% endif %}
 </head>
 <body>
-  <header class="bar">
-    <div class="wrap row">
-      <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>MergeRisk</a>
-      {% if user %}<div class="account"><span>{{ user.login }}</span><button type="button" class="quiet" id="logout">Sign out</button></div>{% endif %}
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="/">
+        <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+          <rect width="28" height="28" rx="5" fill="currentColor"/>
+          <path d="M8 8v12m0-5h6a5 5 0 0 0 5-5V8" fill="none" stroke="var(--surface)" stroke-width="1.5"/>
+          <circle cx="8" cy="8" r="2" fill="var(--surface)"/>
+          <circle cx="8" cy="20" r="2" fill="var(--surface)"/>
+          <circle cx="19" cy="8" r="2" fill="var(--surface)"/>
+        </svg>
+        MergeRisk
+      </a>
+      {% if user %}
+      <div class="account"><span>{{ user.login }}</span><button type="button" class="button button-line" id="logout">Sign out</button></div>
+      {% else %}
+      <a class="text-link" href="https://github.com/aadibansal801/mergerisk-fulfillment-fixture">Sample repository</a>
+      {% endif %}
     </div>
   </header>
-  <main class="wrap">
-    {% if user %}
-    <section class="heading">
+
+  {% if user %}
+  <main class="shell app-main" id="main" tabindex="-1">
+    <div class="page-intro">
       <h1>Analyze a merge</h1>
-      <p>Check what changes when two branches come together.</p>
-    </section>
+      <p>Compare two branches to see which Python issues their merge would introduce.</p>
+    </div>
     <div class="workspace">
-      <section class="panel input-panel" aria-labelledby="input-title">
-        <h2 id="input-title">Repository</h2>
+      <section class="surface setup" aria-labelledby="input-title">
+        <div class="section-head">
+          <h2 id="input-title">New comparison</h2>
+          <button type="button" class="text-button" id="use-sample">Use sample</button>
+        </div>
         <form id="analyze">
-          <label for="repository">Public GitHub repository URL</label>
-          <input id="repository" name="repository" type="url" maxlength="256" placeholder="https://github.com/owner/repo" required>
-          <div class="branches">
-            <div><label for="target">Target branch</label><input id="target" name="target" maxlength="255" placeholder="main" required></div>
-            <div><label for="source">Source branch</label><input id="source" name="source" maxlength="255" placeholder="feature/update" required></div>
+          <div class="field">
+            <label for="repository">Public GitHub repository URL</label>
+            <input id="repository" name="repository" type="url" maxlength="256" placeholder="https://github.com/owner/repo" autocomplete="off" required>
           </div>
-          <button class="primary" type="submit">Run analysis</button>
+          <div class="field">
+            <label for="target">Target branch</label>
+            <p class="field-note" id="target-note">Receives the changes.</p>
+            <input id="target" name="target" maxlength="255" placeholder="main" aria-describedby="target-note" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+          </div>
+          <div class="field">
+            <label for="source">Source branch</label>
+            <p class="field-note" id="source-note">Contains the changes to merge.</p>
+            <input id="source" name="source" maxlength="255" placeholder="feature/update" aria-describedby="source-note" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+          </div>
+          <button class="button button-primary" type="submit">Run analysis</button>
+          <p id="form-message" class="notice" role="status" hidden></p>
         </form>
       </section>
-      <section class="panel" aria-labelledby="runs-title">
+
+      <section class="surface outcome" aria-label="Analysis results">
+        <div id="empty-report" class="empty-report">
+          <h2>Results appear here</h2>
+          {{ merge_flow('empty-merge') }}
+          <p>Run a comparison to see findings, coverage, and any verified patch.</p>
+        </div>
+        <article id="report" aria-labelledby="report-title" hidden>
+          <header class="report-header">
+            <p class="report-repo" id="report-repo"></p>
+            <div class="report-heading">
+              <h2 id="report-title" tabindex="-1">Analysis report</h2>
+              <span class="run-badge" id="report-badge" hidden></span>
+            </div>
+            <p id="report-branches" class="comparison-line"></p>
+            <p id="report-status" class="report-description" role="status"></p>
+          </header>
+
+          <section class="report-findings" id="findings-area" aria-labelledby="findings-title" hidden>
+            <h3 id="findings-title">Findings</h3>
+            <p id="finding-branches" class="field-note" hidden>In finding descriptions, left is the target branch and right is the source branch.</p>
+            <ul class="findings" id="findings"></ul>
+            <p id="findings-limit" class="field-note" hidden></p>
+          </section>
+
+          <section class="coverage" id="coverage" aria-labelledby="coverage-title" hidden>
+            <h3 id="coverage-title">Analysis coverage</h3>
+            <p id="coverage-summary"></p>
+          </section>
+
+          <section class="repair" id="patch" aria-labelledby="patch-title" hidden>
+            <div>
+              <h3 id="patch-title">Verified repair available</h3>
+              <p>The patch applies to the merge candidate for this comparison.</p>
+            </div>
+            <a class="button button-primary" id="patch-link" download>Download verified patch</a>
+          </section>
+
+          <footer class="report-footer">
+            <details id="revision-details" hidden>
+              <summary>Commit details</summary>
+              <dl class="revisions" id="revisions"></dl>
+            </details>
+            <button class="text-button" type="button" id="delete-run" hidden>Delete run</button>
+            <p id="report-actions" class="notice" role="status" hidden></p>
+          </footer>
+        </article>
+      </section>
+
+      <section class="history" aria-labelledby="runs-title">
         <h2 id="runs-title">Recent analyses</h2>
-        <p id="status" role="status">Loading analyses…</p>
+        <p id="status" class="history-status" role="status">Loading analyses…</p>
         <ul id="runs" class="runs"></ul>
       </section>
     </div>
-    <section class="panel report" id="report" aria-labelledby="report-title" hidden>
-      <div class="row report-head"><div><h2 id="report-title">Analysis report</h2><p id="report-status" role="status"></p></div><button class="quiet" type="button" id="delete-run" hidden>Delete run</button></div>
-      <dl id="revisions" class="revisions" hidden></dl>
-      <p id="coverage" hidden></p>
-      <ul class="findings" id="findings"></ul>
-      <div id="patch" hidden><a class="primary" id="patch-link" download>Download verified patch</a><p>Apply this patch to the merge candidate for the commits above.</p></div>
-    </section>
     <noscript>Enable JavaScript to run an analysis and view its report.</noscript>
-    {% else %}
-    <section class="sign-in panel">
-      <h1>See what a merge would break</h1>
-      <p>Compare branches from a public GitHub repository. Review Python findings and download verified repairs.</p>
+  </main>
+  {% else %}
+  <main class="shell landing" id="main" tabindex="-1">
+    <section class="intro">
+      <h1>See what a merge<br class="desktop-break"> would break.</h1>
+      <p>Compare two branches of a public GitHub repository. Catch Python issues introduced by the merge and review verified repairs.</p>
       {% if login_error %}<p class="notice" role="alert">GitHub sign-in failed. Please try again.</p>{% endif %}
       {% if invite_error %}<p class="notice" role="alert">This GitHub account does not have beta access.</p>{% endif %}
-      <a class="primary" href="/auth/github">Sign in with GitHub</a>
+      <a class="button button-primary" href="/auth/github">Sign in with GitHub</a>
+      <p class="access-note">Invite-only beta</p>
     </section>
-    {% endif %}
+
+    <figure class="surface landing-example">
+      <figcaption>Example comparison</figcaption>
+      {{ merge_flow('example-merge') }}
+      <div class="example-finding">
+        <p class="code">parcel_dispatch/manifests.py</p>
+        <h2>Missing <code>json</code> import</h2>
+        <p>One branch removes an unused import. The other adds an export that uses it.</p>
+      </div>
+    </figure>
   </main>
+  {% endif %}
 </body>
 </html>
