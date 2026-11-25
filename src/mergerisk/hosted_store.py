@@ -1,4 +1,4 @@
-"""Persistent, owner-scoped hosted reports with bounded job admission and leases."""
+"""Hosted accounts and owner-scoped reports with bounded job admission and leases."""
 from __future__ import annotations
 
 from contextlib import closing, contextmanager
@@ -19,6 +19,11 @@ _MAX_REPORT_BYTES = 512 * 1024
 _PUBLIC_FIELDS = "id, owner, state, request, error, created, updated"
 
 _SCHEMA = (
+    """CREATE TABLE IF NOT EXISTS hosted_accounts (
+        github_id TEXT PRIMARY KEY,
+        login TEXT NOT NULL,
+        created DOUBLE PRECISION NOT NULL
+    )""",
     """CREATE TABLE IF NOT EXISTS queue_lock (
         singleton INTEGER PRIMARY KEY CHECK (singleton = 1)
     )""",
@@ -118,6 +123,13 @@ class HostedStore:
         self._execute(db, """UPDATE hosted_jobs SET state = 'error', updated = ?,
             error = 'Analysis stopped before completion. Start a new run.', lease_token = NULL, lease_until = NULL
             WHERE state = 'running' AND lease_until <= ?""", (now, now))
+
+    def register_account(self, github_id: str, login: str) -> None:
+        """Create an account or refresh its login after GitHub verifies the identity."""
+        with self._connect() as db:
+            self._execute(db, """INSERT INTO hosted_accounts (github_id, login, created)
+                VALUES (?, ?, ?) ON CONFLICT (github_id) DO UPDATE SET login = excluded.login""",
+                          (github_id, login, time.time()))
 
     def submit(self, owner: str, request: dict) -> dict:
         identifier = uuid.uuid4().hex

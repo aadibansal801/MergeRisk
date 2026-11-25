@@ -26,7 +26,7 @@ def test_idle_hosted_worker_physically_removes_expired_reports(tmp_path, monkeyp
     job = store.claim()
     assert store.finish(job["id"], job["lease_token"], result={"message": "synthetic report"})
     auth = GitHubAuth("client", "secret", "x" * 48, ORIGIN)
-    app = create_app(store=store, auth=auth, origin=ORIGIN, allowed_users={"1"})
+    app = create_app(store=store, auth=auth, origin=ORIGIN)
     with TestClient(app, base_url=ORIGIN):
         now += hosted_store._RETENTION + 1
         deadline = time.monotonic() + 3
@@ -46,17 +46,31 @@ def _as_user(client, auth, identifier, login):
     return {"Origin": ORIGIN, "X-CSRF-Token": "qa-csrf"}
 
 
-def test_hosted_oauth_callback_and_invite(monkeypatch, tmp_path):
+def test_hosted_oauth_signs_up_and_reuses_account_for_same_github_id(monkeypatch, tmp_path):
     auth = GitHubAuth("test-client", "test-secret", "x" * 48, ORIGIN)
     store = HostedStore(sqlite_path=tmp_path / "beta.sqlite3")
-    app = create_app(store=store, auth=auth, origin=ORIGIN, allowed_users={"1"})
+    for name, value in {
+        "ORIGIN": ORIGIN, "DATABASE_URL": "test-store", "GITHUB_CLIENT_ID": "test-client",
+        "GITHUB_CLIENT_SECRET": "test-secret", "SESSION_SECRET": "x" * 48,
+    }.items():
+        monkeypatch.setenv(f"MERGERISK_{name}", value)
+    monkeypatch.delenv("MERGERISK_BETA_GITHUB_IDS", raising=False)
+    monkeypatch.setattr("mergerisk.hosted.HostedStore", lambda url: store)
+    app = create_app(analyzer=lambda _: {"result": {"status": "no_supported_findings"}})
+    profile = {"id": 42, "login": "first-login"}
     monkeypatch.setattr(hosted_auth, "_github_json", lambda url, **kwargs: (
-        {"access_token": "sample-token"} if url.endswith("access_token") else {"id": 1, "login": "alice"}
+        {"access_token": "sample-token"} if url.endswith("access_token") else dict(profile)
     ))
+
+    def oauth_callback(client):
+        login = client.get("/auth/github")
+        state = parse_qs(urlsplit(login.headers["Location"]).query)["state"][0]
+        return client.get("/auth/github/callback", params={"code": "code", "state": state})
 
     with TestClient(app, base_url=ORIGIN, follow_redirects=False) as client:
         home = client.get("/")
         assert "Sign in with GitHub" in home.text
+        assert "first sign-in creates a free MergeRisk account" in home.text
         assert home.headers["Cache-Control"] == "no-store"
         assert "frame-ancestors 'none'" in home.headers["Content-Security-Policy"]
         login = client.get("/auth/github")
@@ -65,25 +79,50 @@ def test_hosted_oauth_callback_and_invite(monkeypatch, tmp_path):
         failed = client.get("/auth/github/callback", params={"code": "code", "state": "old-state"})
         assert failed.headers["Location"] == "/?login=failed"
         assert auth.state_cookie not in client.cookies
+        with store._connect() as db:
+            assert db.execute("SELECT COUNT(*) FROM hosted_accounts").fetchone()[0] == 0
 
-        login = client.get("/auth/github")
-        state = parse_qs(urlsplit(login.headers["Location"]).query)["state"][0]
-        callback = client.get("/auth/github/callback", params={"code": "code", "state": state})
+        callback = oauth_callback(client)
         assert callback.headers["Location"] == "/"
         assert "httponly" in callback.headers["Set-Cookie"].lower()
         assert "Analyze a merge" in client.get("/").text
+        with store._connect() as db:
+            account = tuple(db.execute("SELECT github_id, login, created FROM hosted_accounts").fetchone())
+        assert account[:2] == ("42", "first-login")
 
-    with TestClient(app, base_url=ORIGIN, follow_redirects=False) as outsider:
-        _as_user(outsider, auth, "3", "uninvited")
-        assert outsider.get("/api/jobs").status_code == 401
-        assert outsider.get("/").text.count("Sign in with GitHub") == 1
+        session = auth._open("session", client.cookies[auth.session_cookie])
+        queued = client.post("/api/jobs", headers={"Origin": ORIGIN, "X-CSRF-Token": session["csrf"]}, json={
+            "repository": "https://github.com/example/repository", "target": "main", "source": "feature",
+        })
+        assert queued.status_code == 202
+        report_path = f"/api/jobs/{queued.json()['id']}"
+
+        client.cookies.clear()
+        profile["login"] = "renamed-login"
+        assert oauth_callback(client).headers["Location"] == "/"
+        assert "renamed-login" in client.get("/").text
+        assert client.get(report_path).status_code == 200
+        with store._connect() as db:
+            assert [tuple(row) for row in db.execute("SELECT github_id, login, created FROM hosted_accounts")] == [
+                ("42", "renamed-login", account[2]),
+            ]
+
+        # A provider-verified identity gets a session only after the account is saved.
+        client.cookies.clear()
+        with monkeypatch.context() as failing:
+            def unavailable(*args):
+                raise OSError("test storage failure")
+
+            failing.setattr(store, "register_account", unavailable)
+            assert oauth_callback(client).headers["Location"] == "/?login=failed"
+            assert client.get("/api/jobs").status_code == 401
 
 
 def test_hosted_queue_report_download_and_two_account_ownership(tmp_path):
     sample_patch = b"diff --git a/app.py b/app.py\n"
     auth = GitHubAuth("test-client", "test-secret", "x" * 48, ORIGIN)
     store = HostedStore(sqlite_path=tmp_path / "beta.sqlite3")
-    app = create_app(store=store, auth=auth, origin=ORIGIN, allowed_users={"1", "2"}, analyzer=lambda data: {
+    app = create_app(store=store, auth=auth, origin=ORIGIN, analyzer=lambda data: {
         "result": {"repository": data["repository"], "status": "findings_present", "validation": "static_verified",
                    "patch_b64": base64.b64encode(sample_patch).decode("ascii"), "findings": []},
     })

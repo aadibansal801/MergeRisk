@@ -141,10 +141,11 @@ class GitHubAuth:
         identity, login = profile.get("id"), profile.get("login")
         if type(identity) is not int or identity <= 0 or not isinstance(login, str) or not _LOGIN.fullmatch(login):
             raise ValueError("GitHub returned an invalid account profile.")
-        user = User(str(identity), login, secrets.token_urlsafe(32))
+        return User(str(identity), login, secrets.token_urlsafe(32))
+
+    def start_session(self, response: Response, user: User) -> None:
         session = self._seal("session", {"id": user.id, "login": user.login, "csrf": user.csrf}, _SESSION_AGE)
         self._set_cookie(response, self.session_cookie, session, _SESSION_AGE)
-        return user
 
     def user(self, request: BrowserRequest) -> User | None:
         session = self._open("session", request.cookies.get(self.session_cookie, ""))

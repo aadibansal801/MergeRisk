@@ -89,9 +89,10 @@ def test_oauth_state_pkce_and_per_session_csrf(monkeypatch):
     origin = "https://example.test"
     auth = hosted_auth.GitHubAuth("client", "oauth-secret", "session-secret-for-this-test-only", origin)
     start = Response()
-    parameters = parse_qs(urlsplit(auth.start(start)).query)
+    parameters = parse_qs(urlsplit(auth.start(start)).query, keep_blank_values=True)
     assert parameters["code_challenge_method"] == ["S256"]
     assert parameters["redirect_uri"] == [origin + "/auth/github/callback"]
+    assert parameters["scope"] == [""]
     assert "Secure" in start.headers["Set-Cookie"] and "HttpOnly" in start.headers["Set-Cookie"]
     pending = f"{auth.state_cookie}={_cookie_value(start, auth.state_cookie)}"
     with pytest.raises(ValueError, match="did not match"):
@@ -100,6 +101,8 @@ def test_oauth_state_pkce_and_per_session_csrf(monkeypatch):
 
     callback = Response()
     user = auth.callback(_request(pending), callback, "code", parameters["state"][0])
+    assert auth.session_cookie not in str(callback.headers)
+    auth.start_session(callback, user)
     verifier = provider_requests[0][1]["code_verifier"]
     assert hosted_auth._b64(sha256(verifier.encode()).digest()) == parameters["code_challenge"][0]
     assert provider_requests[1] == ("https://api.github.com/user", None, "example_provider_token")

@@ -121,18 +121,15 @@ def _origin(value):
 
 
 def _configured():
-    names = ("ORIGIN", "DATABASE_URL", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "SESSION_SECRET", "BETA_GITHUB_IDS")
+    names = ("ORIGIN", "DATABASE_URL", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "SESSION_SECRET")
     settings = {name: os.environ.get("MERGERISK_" + name, "") for name in names}
     missing = ["MERGERISK_" + name for name, value in settings.items() if not value]
     if missing:
         raise ValueError("Missing hosted settings: " + ", ".join(missing))
     origin, _ = _origin(settings["ORIGIN"])
-    users = {value.strip() for value in settings["BETA_GITHUB_IDS"].split(",")}
-    if any(not user.isascii() or not user.isdecimal() for user in users):
-        raise ValueError("MERGERISK_BETA_GITHUB_IDS must contain comma-separated numeric GitHub user IDs")
     store = HostedStore(settings["DATABASE_URL"])
     auth = GitHubAuth(settings["GITHUB_CLIENT_ID"], settings["GITHUB_CLIENT_SECRET"], settings["SESSION_SECRET"], origin)
-    return store, auth, users, origin
+    return store, auth, origin
 
 
 def _public_job(job, *, detail=False):
@@ -144,11 +141,11 @@ def _public_job(job, *, detail=False):
     return data
 
 
-def create_app(*, store=None, auth=None, allowed_users=None, origin=None, analyzer=_run_analysis):
+def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
     if store is None and auth is None:
-        store, auth, allowed_users, origin = _configured()
-    if store is None or auth is None or not allowed_users or origin is None:
-        raise ValueError("Hosted app requires a store, authentication, origin, and beta users")
+        store, auth, origin = _configured()
+    if store is None or auth is None or origin is None:
+        raise ValueError("Hosted app requires a store, authentication, and origin")
     _, host = _origin(origin)
 
     @asynccontextmanager
@@ -187,9 +184,9 @@ def create_app(*, store=None, auth=None, allowed_users=None, origin=None, analyz
 
     def current(request, *, required=True, write=False):
         user = auth.user(request)
-        if user is None or user.id not in allowed_users:
+        if user is None:
             if required:
-                raise HTTPException(401, "Sign in with an invited GitHub account.")
+                raise HTTPException(401, "Sign in with GitHub to use MergeRisk.")
             return None
         if write:
             try:
@@ -215,7 +212,6 @@ def create_app(*, store=None, auth=None, allowed_users=None, origin=None, analyz
         return templates.TemplateResponse(request, "hosted.html", {
             "user": current(request, required=False),
             "login_error": login == "failed",
-            "invite_error": login == "invite",
         })
 
     @app.get("/auth/github")
@@ -232,9 +228,13 @@ def create_app(*, store=None, auth=None, allowed_users=None, origin=None, analyz
         except (ValueError, OSError):
             response.headers["Location"] = "/?login=failed"
             return response
-        if user.id not in allowed_users:
-            response = RedirectResponse("/?login=invite", 303)
-            auth.logout(response)
+        try:
+            store.register_account(user.id, user.login)
+        except Exception:
+            _LOG.warning("Hosted sign-in could not save the account")
+            response.headers["Location"] = "/?login=failed"
+            return response
+        auth.start_session(response, user)
         return response
 
     @app.post("/auth/logout")

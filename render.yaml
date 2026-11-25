@@ -15,5 +15,3 @@ services:
         sync: false
       - key: MERGERISK_SESSION_SECRET
         generateValue: true
-      - key: MERGERISK_BETA_GITHUB_IDS
-        sync: false
