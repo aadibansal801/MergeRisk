@@ -175,7 +175,7 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+            "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.github.com; "
             "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         )
         return response

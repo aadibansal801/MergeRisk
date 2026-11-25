@@ -169,6 +169,7 @@ def test_hosted_oauth_signs_up_and_reuses_account_for_same_github_id(monkeypatch
         assert "first sign-in creates a free MergeRisk account" in home.text
         assert home.headers["Cache-Control"] == "no-store"
         assert "frame-ancestors 'none'" in home.headers["Content-Security-Policy"]
+        assert "connect-src 'self' https://api.github.com" in home.headers["Content-Security-Policy"]
         login = client.get("/auth/github")
         provider = urlsplit(login.headers["Location"])
         assert provider.hostname == "github.com"

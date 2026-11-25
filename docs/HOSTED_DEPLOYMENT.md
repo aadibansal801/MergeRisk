@@ -2,7 +2,7 @@
 
 The website runs on FastAPI and uses existing MergeRisk static analysis. Anyone with a GitHub account can sign in. The first successful sign-in creates a MergeRisk account. An analysis compares two branches of a public repository and reports findings about the recorded revisions. An exact, statically verified repair can be downloaded as a Git patch against the candidate merge tree. The local CLI and dashboard continue to use the local contract.
 
-The form loads public repositories from the signed-in GitHub account and fetches branches for the selected repository. Other public repositories can be loaded by URL. Lookup pages are cached briefly and use GitHub's public API limits.
+The form loads public repositories from the signed-in GitHub account and fetches branches for the selected repository. Other public repositories can be loaded by URL. Lookup pages are cached briefly. If the server's lookup fails, the browser can request the public list from GitHub without sending credentials.
 
 ## Runtime and data
 

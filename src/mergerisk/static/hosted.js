@@ -1,4 +1,5 @@
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
+const githubLogin = document.querySelector('meta[name="github-login"]').content;
 const form = document.querySelector('#analyze');
 const runButton = form.querySelector('[type="submit"]');
 const formMessage = document.querySelector('#form-message');
@@ -71,6 +72,49 @@ async function api(path, method = 'GET', input) {
     throw error;
   }
   return result;
+}
+
+function publicRepositorySlug(url) {
+  const match = /^https:\/\/github\.com\/([a-z0-9][a-z0-9-]{0,38}\/[a-z0-9_.-]{1,100})\/?$/i.exec(url.trim());
+  if (!match) return '';
+  const slug = match[1].toLowerCase().replace(/\.git$/, '');
+  return /\/(?:\.{0,2})$/.test(slug) ? '' : slug;
+}
+
+async function catalogPage(kind, query) {
+  try {
+    return await api(`/api/github/${kind}?${query}`);
+  } catch (error) {
+    if (error.status !== 502) throw error;
+  }
+
+  // Render's public REST quota can be exhausted independently of the visitor's quota.
+  const slug = kind === 'branches' ? publicRepositorySlug(query.get('repository')) : '';
+  if (kind === 'branches' && !slug) throw new Error('Enter a public GitHub repository URL.');
+  const resource = slug ? `repos/${slug}/branches` : `users/${encodeURIComponent(githubLogin)}/repos`;
+  const githubQuery = new URLSearchParams({ per_page: '50', page: query.get('page') });
+  const response = await fetch(`https://api.github.com/${resource}?${githubQuery}`, {
+    credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(7000),
+  }).catch(() => { throw new Error('GitHub lookups are temporarily unavailable. Try again shortly.'); });
+  if (response.status === 403 || response.status === 429) {
+    throw new Error('GitHub is limiting public lookups. Try again shortly.');
+  }
+  if (response.status === 404) throw new Error('GitHub could not find that public repository or account.');
+  if (!response.ok) throw new Error('GitHub lookups are temporarily unavailable.');
+  const rows = await response.json().catch(() => null);
+  if (!Array.isArray(rows) || rows.length > 50) throw new Error('GitHub returned an unexpected catalog response.');
+  const has_more = (response.headers.get('Link') || '').includes('rel="next"');
+  if (slug) {
+    const items = rows.map(row => row?.name).filter(name => typeof name === 'string' && name.length > 0 && name.length <= 255);
+    return { repository: `https://github.com/${slug}`, items, has_more };
+  }
+  const items = [];
+  for (const row of rows) {
+    if (row?.private !== false || typeof row.full_name !== 'string') continue;
+    const name = publicRepositorySlug(`https://github.com/${row.full_name}`);
+    if (name) items.push({ name, url: `https://github.com/${name}`, default_branch: row.default_branch });
+  }
+  return { items, has_more };
 }
 
 function jobPath(id) {
@@ -257,7 +301,7 @@ async function loadRepositories() {
   moreRepositories.disabled = true;
   showMessage(repositoryStatus, 'Loading public repositories…');
   try {
-    const result = await api(`/api/github/repositories?page=${repositoryPage}`);
+    const result = await catalogPage('repositories', new URLSearchParams({ page: repositoryPage }));
     for (const item of result.items) addRepository(item.url, item.name, item.default_branch);
     repositoryPage += 1;
     repository.options[0].text = repositoryDefaults.size ? 'Choose a repository' : 'No public repositories found';
@@ -307,7 +351,7 @@ async function loadBranches() {
   moreBranches.disabled = true;
   showMessage(branchStatus, 'Loading branches…');
   try {
-    const result = await api(`/api/github/branches?${query}`);
+    const result = await catalogPage('branches', query);
     if (version !== branchVersion) return;
     const defaultBranch = repositoryDefaults.get(result.repository);
     addRepository(result.repository, result.repository.slice('https://github.com/'.length), defaultBranch);

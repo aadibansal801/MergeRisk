@@ -25,7 +25,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MergeRisk</title>
-  {% if user %}<meta name="csrf-token" content="{{ user.csrf }}">{% endif %}
+  {% if user %}
+  <meta name="csrf-token" content="{{ user.csrf }}">
+  <meta name="github-login" content="{{ user.login }}">
+  {% endif %}
   <link rel="stylesheet" href="/assets/hosted.css">
   {% if user %}<script src="/assets/hosted.js" defer></script>{% endif %}
 </head>
