@@ -105,3 +105,15 @@ The latest [idle benchmark](reports/readiness-20261117-68e5ed73/benchmark-idle.j
 [User guide](docs/USER_GUIDE.md) · [Architecture](docs/ARCHITECTURE.md) · [Testing](docs/TESTING.md) · [Security](docs/SECURITY.md) · [Decisions](docs/DECISIONS.md) · [Progress](docs/PROGRESS.md) · [Changelog](CHANGELOG.md)
 
 Existing detector compatibility modules/tests remain supported. No new open-source license has been asserted for this repository.
+
+## Admin dashboard (hosted beta)
+
+The hosted app serves an admin area at `/admin` with email/password sign-in and two roles: **super admin** (can add/remove admins and reset their passwords) and **admin** (read-only usage statistics: users, sign-ins, analyses per user, top repositories, daily activity).
+
+Seed the first super admin once (never overwrites an existing password), either with the command or by setting `MERGERISK_SEED_SUPERADMIN_EMAIL` and `MERGERISK_SEED_SUPERADMIN_PASSWORD` on the service:
+
+```text
+python -m mergerisk.hosted_admin seed --email you@example.com --password '...'
+```
+
+Usage is recorded in a permanent `hosted_usage_events` table (sign-ins and analysis submissions); job reports themselves still expire after 24 hours.

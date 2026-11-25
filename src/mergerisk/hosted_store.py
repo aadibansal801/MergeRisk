@@ -53,6 +53,31 @@ _SCHEMA = (
         created DOUBLE PRECISION NOT NULL
     )""",
     "CREATE INDEX IF NOT EXISTS hosted_admissions_created ON hosted_admissions (created)",
+    # Usage history is kept indefinitely (unlike jobs) so the admin dashboard can report on it.
+    """CREATE TABLE IF NOT EXISTS hosted_usage_events (
+        id TEXT PRIMARY KEY,
+        github_id TEXT NOT NULL,
+        login TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        repository TEXT,
+        created DOUBLE PRECISION NOT NULL
+    )""",
+    "CREATE INDEX IF NOT EXISTS hosted_usage_events_created ON hosted_usage_events (created)",
+    "CREATE INDEX IF NOT EXISTS hosted_usage_events_user ON hosted_usage_events (github_id, created)",
+    """CREATE TABLE IF NOT EXISTS admin_accounts (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin')),
+        created DOUBLE PRECISION NOT NULL,
+        created_by TEXT
+    )""",
+    """CREATE TABLE IF NOT EXISTS admin_login_failures (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        created DOUBLE PRECISION NOT NULL
+    )""",
+    "CREATE INDEX IF NOT EXISTS admin_login_failures_email ON admin_login_failures (email, created)",
 )
 
 
@@ -136,6 +161,12 @@ class HostedStore:
             self._execute(db, """INSERT INTO hosted_accounts (github_id, login, created)
                 VALUES (?, ?, ?) ON CONFLICT (github_id) DO UPDATE SET login = excluded.login""",
                           (github_id, login, time.time()))
+
+    def record_event(self, github_id: str, login: str, kind: str, repository: str | None = None) -> None:
+        """Append one permanent usage record (kind is 'login' or 'analysis')."""
+        with self._connect() as db:
+            self._execute(db, """INSERT INTO hosted_usage_events (id, github_id, login, kind, repository, created)
+                VALUES (?, ?, ?, ?, ?, ?)""", (uuid.uuid4().hex, github_id, login, kind, repository, time.time()))
 
     def is_session_revoked(self, token_hash: str) -> bool:
         with self._connect() as db:

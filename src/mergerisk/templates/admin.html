@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MergeRisk admin</title>
+  {% if admin %}<meta name="csrf-token" content="{{ csrf }}">{% endif %}
+  <link rel="stylesheet" href="/assets/hosted.css">
+  <link rel="stylesheet" href="/assets/admin.css">
+  <script src="/assets/{{ 'admin.js' if admin else 'admin-login.js' }}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="/admin">MergeRisk <span class="admin-tag">Admin</span></a>
+      {% if admin %}
+      <div class="account"><span>{{ admin.email }} · {{ 'Super admin' if admin.role == 'super_admin' else 'Admin' }}</span>
+        <button type="button" class="button button-line" id="logout">Sign out</button></div>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if not admin %}
+  <main class="shell login-main" id="main" tabindex="-1">
+    <form id="login" class="login-card" novalidate>
+      <h1>Admin sign in</h1>
+      <div class="field"><label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="username" maxlength="254" required></div>
+      <div class="field"><label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" maxlength="128" required></div>
+      <p class="form-error" id="message" role="alert" hidden></p>
+      <button type="submit" class="button button-primary">Sign in</button>
+    </form>
+  </main>
+  {% else %}
+  <main class="shell admin-main" id="main" tabindex="-1" data-role="{{ admin.role }}" data-id="{{ admin.id }}">
+    <div class="admin-bar">
+      <h1>Portal usage</h1>
+      <div class="field range"><label for="range">Period</label>
+        <select id="range"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option></select></div>
+    </div>
+    <p class="form-error" id="load-error" role="alert" hidden></p>
+
+    <section class="tiles" id="tiles" aria-label="Summary"></section>
+
+    <section class="panel" aria-labelledby="chart-title">
+      <h2 id="chart-title">Daily activity</h2>
+      <div class="legend"><span class="key key-analyses"></span> Analyses <span class="key key-logins"></span> Sign-ins</div>
+      <div id="chart" class="chart" role="img" aria-label="Daily sign-ins and analyses"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="users-title">
+      <h2 id="users-title">Users</h2>
+      <div class="field"><label for="filter">Filter by GitHub login</label>
+        <input id="filter" type="search" maxlength="39" autocomplete="off"></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>User</th><th class="num">Sign-ins</th><th class="num">Analyses</th><th>Last active</th><th>Joined</th></tr></thead>
+        <tbody id="users"></tbody></table></div>
+    </section>
+
+    <div class="two-col">
+      <section class="panel" aria-labelledby="repos-title">
+        <h2 id="repos-title">Top repositories</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Repository</th><th class="num">Runs</th><th class="num">Users</th></tr></thead>
+          <tbody id="repos"></tbody></table></div>
+      </section>
+      <section class="panel" aria-labelledby="feed-title">
+        <h2 id="feed-title">Recent activity <span id="feed-scope" class="muted"></span></h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>When</th><th>User</th><th>Event</th></tr></thead>
+          <tbody id="feed"></tbody></table></div>
+      </section>
+    </div>
+
+    <section class="panel" aria-labelledby="admins-title" id="admins-panel" hidden>
+      <h2 id="admins-title">Admins</h2>
+      <form id="add-admin" class="inline-form" novalidate>
+        <div class="field"><label for="new-email">New admin email</label>
+          <input id="new-email" type="email" maxlength="254" autocomplete="off" required></div>
+        <div class="field"><label for="new-password">Initial password</label>
+          <input id="new-password" type="password" maxlength="128" autocomplete="new-password" required>
+          <p class="field-note">8+ characters with upper and lower case, a number and a symbol.</p></div>
+        <button type="submit" class="button button-primary">Add admin</button>
+      </form>
+      <p class="form-error" id="admin-message" role="status" hidden></p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Email</th><th>Role</th><th>Added by</th><th>Created</th><th></th></tr></thead>
+        <tbody id="admins"></tbody></table></div>
+    </section>
+
+    <section class="panel" aria-labelledby="pw-title">
+      <h2 id="pw-title">Change my password</h2>
+      <form id="change-password" class="inline-form" novalidate>
+        <div class="field"><label for="current-password">Current password</label>
+          <input id="current-password" type="password" maxlength="128" autocomplete="current-password" required></div>
+        <div class="field"><label for="next-password">New password</label>
+          <input id="next-password" type="password" maxlength="128" autocomplete="new-password" required></div>
+        <button type="submit" class="button button-line">Update password</button>
+      </form>
+      <p class="form-error" id="pw-message" role="status" hidden></p>
+    </section>
+  </main>
+  {% endif %}
+</body>
+</html>

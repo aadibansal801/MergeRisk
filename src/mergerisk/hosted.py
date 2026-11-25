@@ -22,7 +22,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from mergerisk import hosted_catalog
+from mergerisk import hosted_admin, hosted_catalog
 from mergerisk.hosted_auth import GitHubAuth
 from mergerisk.hosted_ingest import parse_repository_url, validate_branch
 from mergerisk.hosted_store import HostedStore
@@ -243,6 +243,10 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
             _LOG.warning("Hosted sign-in could not save the account")
             response.headers["Location"] = "/?login=failed"
             return response
+        try:
+            store.record_event(user.id, user.login, "login")
+        except Exception:
+            _LOG.warning("Hosted sign-in could not record usage")
         auth.start_session(response, user)
         return response
 
@@ -303,6 +307,11 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
             job = await asyncio.to_thread(store.submit, session.user.id, payload)
         except OverflowError as error:
             raise HTTPException(429, str(error)) from error
+        try:
+            await asyncio.to_thread(store.record_event, session.user.id, session.user.login, "analysis",
+                                    payload["repository"])
+        except Exception:
+            _LOG.warning("Hosted analysis could not record usage")
         request.app.state.wake.set()
         return _public_job(job)
 
@@ -335,6 +344,7 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
             raise HTTPException(409, "Wait for the analysis to finish before deleting it.")
         return Response(status_code=204)
 
+    hosted_admin.mount(app, store, auth, templates)
     return app
 
 
