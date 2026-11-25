@@ -111,7 +111,10 @@ def test_oauth_state_pkce_and_per_session_csrf(monkeypatch):
                for line in callback.headers.getlist("Set-Cookie"))
     assert "example_provider_token" not in str(callback.headers)
     signed_in = f"{auth.session_cookie}={session}"
-    assert user.id == "101" and auth.user(_request(signed_in)) == user
+    parsed_session = auth.session(_request(signed_in))
+    assert user.id == "101" and parsed_session.user == user
+    assert parsed_session.token_hash == sha256(session.encode("ascii")).hexdigest()
+    assert parsed_session.expires == now + 8 * 3600
     auth.require_csrf(_request(signed_in, origin, user.csrf), user)
     with pytest.raises(ValueError, match="origin or CSRF"):
         auth.require_csrf(_request(signed_in, "https://other.test", user.csrf), user)
@@ -127,4 +130,4 @@ def test_oauth_state_pkce_and_per_session_csrf(monkeypatch):
     assert "private provider detail" not in str(error.value)
     assert auth.session_cookie not in str(failed.headers)
     now += 28_801
-    assert auth.user(_request(signed_in)) is None
+    assert auth.session(_request(signed_in)) is None

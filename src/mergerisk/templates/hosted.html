@@ -65,20 +65,38 @@
         </div>
         <form id="analyze">
           <div class="field">
-            <label for="repository">Public GitHub repository URL</label>
-            <input id="repository" name="repository" type="url" maxlength="256" placeholder="https://github.com/owner/repo" autocomplete="off" required>
+            <label for="repository">Public GitHub repository</label>
+            <select id="repository" name="repository" aria-describedby="repository-status" required disabled>
+              <option value="">Loading your repositories…</option>
+            </select>
+            <p class="field-note" id="repository-status" role="status" hidden></p>
+            <button type="button" class="text-button catalog-action" id="more-repositories" hidden>Load more repositories</button>
+            <details class="catalog-alternative" id="other-repository">
+              <summary>Use another public repository</summary>
+              <div class="field">
+                <label for="repository-url">Repository URL</label>
+                <input id="repository-url" type="url" maxlength="256" placeholder="https://github.com/owner/repo" autocomplete="off">
+                <button type="button" class="button button-line catalog-action" id="load-branches">Load branches</button>
+              </div>
+            </details>
           </div>
           <div class="field">
             <label for="target">Target branch</label>
             <p class="field-note" id="target-note">Receives the changes.</p>
-            <input id="target" name="target" maxlength="255" placeholder="main" aria-describedby="target-note" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+            <select id="target" name="target" aria-describedby="target-note" required disabled>
+              <option value="">Choose a repository first</option>
+            </select>
           </div>
           <div class="field">
             <label for="source">Source branch</label>
             <p class="field-note" id="source-note">Contains the changes to merge.</p>
-            <input id="source" name="source" maxlength="255" placeholder="feature/update" aria-describedby="source-note" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+            <select id="source" name="source" aria-describedby="source-note" required disabled>
+              <option value="">Choose a repository first</option>
+            </select>
+            <p class="field-note" id="branch-status" role="status" hidden></p>
+            <button type="button" class="text-button catalog-action" id="more-branches" hidden>Load more branches</button>
           </div>
-          <button class="button button-primary" type="submit">Run analysis</button>
+          <button class="button button-primary" type="submit" disabled>Run analysis</button>
           <p id="form-message" class="notice" role="status" hidden></p>
         </form>
       </section>

@@ -2,6 +2,15 @@ const csrf = document.querySelector('meta[name="csrf-token"]').content;
 const form = document.querySelector('#analyze');
 const runButton = form.querySelector('[type="submit"]');
 const formMessage = document.querySelector('#form-message');
+const repository = form.elements.repository;
+const target = form.elements.target;
+const source = form.elements.source;
+const repositoryStatus = document.querySelector('#repository-status');
+const branchStatus = document.querySelector('#branch-status');
+const moreRepositories = document.querySelector('#more-repositories');
+const moreBranches = document.querySelector('#more-branches');
+const otherRepository = document.querySelector('#other-repository');
+const repositoryUrl = document.querySelector('#repository-url');
 const statusLine = document.querySelector('#status');
 const runs = document.querySelector('#runs');
 const emptyReport = document.querySelector('#empty-report');
@@ -41,6 +50,12 @@ let rendered = null;
 let refreshTimer;
 let revision = 0;
 let historyKey = '';
+const repositoryDefaults = new Map();
+let repositoryPage = 1;
+let branchPage = 1;
+let branchRepository = '';
+let branchVersion = 0;
+let submitting = false;
 
 async function api(path, method = 'GET', input) {
   const response = await fetch(path, {
@@ -228,16 +243,163 @@ async function openRun(id) {
   if (rendered?.id === id && selected === id) reportTitle.focus();
 }
 
-document.querySelector('#use-sample').addEventListener('click', () => {
-  form.elements.repository.value = 'https://github.com/aadibansal801/mergerisk-fulfillment-fixture';
-  form.elements.target.value = 'shipping/trim-imports';
-  form.elements.source.value = 'shipping/carrier-export';
+function updateRunButton() {
+  runButton.disabled = submitting || !repository.value || !target.value || !source.value;
+}
+
+function addRepository(url, name, defaultBranch) {
+  if (!repositoryDefaults.has(url)) repository.add(new Option(name, url));
+  if (defaultBranch || !repositoryDefaults.has(url)) repositoryDefaults.set(url, defaultBranch);
+  repository.disabled = false;
+}
+
+async function loadRepositories() {
+  moreRepositories.disabled = true;
+  showMessage(repositoryStatus, 'Loading public repositories…');
+  try {
+    const result = await api(`/api/github/repositories?page=${repositoryPage}`);
+    for (const item of result.items) addRepository(item.url, item.name, item.default_branch);
+    repositoryPage += 1;
+    repository.options[0].text = repositoryDefaults.size ? 'Choose a repository' : 'No public repositories found';
+    moreRepositories.hidden = !result.has_more;
+    moreRepositories.textContent = 'Load more repositories';
+    showMessage(repositoryStatus, repositoryDefaults.size ? '' : 'Use another public repository to get started.');
+  } catch (error) {
+    repository.options[0].text = repositoryDefaults.size ? 'Choose a repository' : 'Repositories unavailable';
+    showMessage(repositoryStatus, error.message);
+    moreRepositories.textContent = 'Retry repositories';
+    moreRepositories.hidden = false;
+  } finally {
+    moreRepositories.disabled = false;
+  }
+}
+
+function resetBranches(message) {
+  branchVersion += 1;
+  branchPage = 1;
+  moreBranches.hidden = true;
+  for (const select of [target, source]) {
+    select.replaceChildren(new Option(message, ''));
+    select.disabled = true;
+  }
   showMessage(formMessage, '');
+  showMessage(branchStatus, '');
+  updateRunButton();
+}
+
+function appendBranches(branches) {
+  const known = new Set(Array.from(target.options, option => option.value));
+  for (const branch of branches) {
+    if (known.has(branch)) continue;
+    known.add(branch);
+    target.add(new Option(branch, branch));
+    source.add(new Option(branch, branch));
+  }
+  for (const select of [target, source]) {
+    select.disabled = select.options.length < 2;
+    select.options[0].text = select.disabled ? 'No branches available' : 'Choose a branch';
+  }
+}
+
+async function loadBranches() {
+  const version = branchVersion;
+  const query = new URLSearchParams({ repository: branchRepository, page: branchPage });
+  moreBranches.disabled = true;
+  showMessage(branchStatus, 'Loading branches…');
+  try {
+    const result = await api(`/api/github/branches?${query}`);
+    if (version !== branchVersion) return;
+    const defaultBranch = repositoryDefaults.get(result.repository);
+    addRepository(result.repository, result.repository.slice('https://github.com/'.length), defaultBranch);
+    repository.value = result.repository;
+    branchRepository = result.repository;
+    if (otherRepository.open && repositoryUrl.value.trim() === query.get('repository')) {
+      repositoryUrl.value = '';
+      otherRepository.open = false;
+    }
+    appendBranches(result.items);
+    if (branchPage === 1 && result.items.length && !target.value && defaultBranch) {
+      appendBranches([defaultBranch]);
+      target.value = defaultBranch;
+    }
+    branchPage += 1;
+    moreBranches.hidden = !result.has_more;
+    moreBranches.textContent = 'Load more branches';
+    showMessage(branchStatus, target.disabled ? 'GitHub returned no branches for this repository.' : '');
+  } catch (error) {
+    if (version !== branchVersion) return;
+    showMessage(branchStatus, error.message);
+    if (branchPage === 1) {
+      target.options[0].text = 'Branches unavailable';
+      source.options[0].text = 'Branches unavailable';
+    }
+    moreBranches.textContent = 'Retry branches';
+    moreBranches.hidden = error.status === 422;
+  } finally {
+    if (version === branchVersion) {
+      moreBranches.disabled = false;
+      updateRunButton();
+    }
+  }
+}
+
+function selectRepository(url) {
+  branchRepository = url;
+  resetBranches(url ? 'Loading branches…' : 'Choose a repository first');
+  if (url) loadBranches();
+}
+
+function loadOtherRepository() {
+  const url = repositoryUrl.value.trim();
+  if (!url) {
+    showMessage(formMessage, 'Enter a public GitHub repository URL.');
+    repositoryUrl.focus();
+    return;
+  }
+  if (!repositoryUrl.reportValidity()) return;
+  repository.value = '';
+  selectRepository(url);
+}
+
+moreRepositories.addEventListener('click', loadRepositories);
+moreBranches.addEventListener('click', loadBranches);
+repository.addEventListener('change', () => selectRepository(repository.value));
+document.querySelector('#load-branches').addEventListener('click', loadOtherRepository);
+otherRepository.addEventListener('toggle', () => { repositoryUrl.disabled = !otherRepository.open; });
+repositoryUrl.disabled = true;
+repositoryUrl.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    loadOtherRepository();
+  }
 });
 
-form.addEventListener('input', () => showMessage(formMessage, ''));
+document.querySelector('#use-sample').addEventListener('click', () => {
+  const name = 'aadibansal801/mergerisk-fulfillment-fixture';
+  const url = `https://github.com/${name}`;
+  const sampleTarget = 'shipping/trim-imports';
+  const sampleSource = 'shipping/carrier-export';
+  addRepository(url, name);
+  repository.value = url;
+  branchRepository = url;
+  resetBranches('Choose a branch');
+  appendBranches([sampleTarget, sampleSource]);
+  target.value = sampleTarget;
+  source.value = sampleSource;
+  moreBranches.hidden = false;
+  moreBranches.disabled = false;
+  moreBranches.textContent = 'Load more branches';
+  otherRepository.open = false;
+  updateRunButton();
+});
+
+form.addEventListener('input', () => {
+  showMessage(formMessage, '');
+  updateRunButton();
+});
 form.addEventListener('submit', async event => {
   event.preventDefault();
+  if (runButton.disabled) return;
   const input = Object.fromEntries(new FormData(form));
   showMessage(formMessage, '');
   if (input.target.trim() === input.source.trim()) {
@@ -245,7 +407,9 @@ form.addEventListener('submit', async event => {
     form.elements.source.focus();
     return;
   }
-  runButton.disabled = true;
+  submitting = true;
+  updateRunButton();
+  runButton.setAttribute('aria-busy', 'true');
   runButton.textContent = 'Submitting…';
   try {
     const job = await api('/api/jobs', 'POST', input);
@@ -253,7 +417,9 @@ form.addEventListener('submit', async event => {
   } catch (error) {
     showMessage(formMessage, error.message);
   } finally {
-    runButton.disabled = false;
+    submitting = false;
+    updateRunButton();
+    runButton.removeAttribute('aria-busy');
     runButton.textContent = 'Run analysis';
   }
 });
@@ -285,4 +451,5 @@ document.querySelector('#logout').addEventListener('click', async () => {
   }
 });
 
+loadRepositories();
 refresh();

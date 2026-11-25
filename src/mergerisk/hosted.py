@@ -15,13 +15,14 @@ import sys
 import tempfile
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from mergerisk import hosted_catalog
 from mergerisk.hosted_auth import GitHubAuth
 from mergerisk.hosted_ingest import parse_repository_url, validate_branch
 from mergerisk.hosted_store import HostedStore
@@ -183,17 +184,24 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
     templates = Jinja2Templates(directory=_ASSETS / "templates")
 
     def current(request, *, required=True, write=False):
-        user = auth.user(request)
-        if user is None:
+        session = auth.session(request)
+        if session is not None:
+            try:
+                if store.is_session_revoked(session.token_hash):
+                    session = None
+            except Exception as error:
+                _LOG.warning("Hosted session verification could not reach the database")
+                raise HTTPException(503, "Sign-in verification is unavailable. Try again shortly.") from error
+        if session is None:
             if required:
                 raise HTTPException(401, "Sign in with GitHub to use MergeRisk.")
             return None
         if write:
             try:
-                auth.require_csrf(request, user)
+                auth.require_csrf(request, session.user)
             except ValueError as error:
                 raise HTTPException(403, "Request could not be verified.") from error
-        return user
+        return session
 
     def owned_job(owner, job_id):
         if len(job_id) > 64:
@@ -209,8 +217,9 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
 
     @app.get("/")
     def home(request: Request, login: str = ""):
+        session = current(request, required=False)
         return templates.TemplateResponse(request, "hosted.html", {
-            "user": current(request, required=False),
+            "user": session.user if session is not None else None,
             "login_error": login == "failed",
         })
 
@@ -239,14 +248,40 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
 
     @app.post("/auth/logout")
     def logout(request: Request):
-        current(request, write=True)
+        session = current(request, write=True)
+        try:
+            store.revoke_session(session.token_hash, session.expires)
+        except Exception as error:
+            _LOG.warning("Hosted sign-out could not save the session revocation")
+            raise HTTPException(503, "Sign-out could not be completed. Try again shortly.") from error
         response = Response(status_code=204)
         auth.logout(response)
         return response
 
+    @app.get("/api/github/repositories")
+    def github_repositories(request: Request, page: int = Query(1, ge=1, le=1000)):
+        login = current(request).user.login
+        try:
+            return hosted_catalog.repositories(login, page)
+        except hosted_catalog.CatalogError as error:
+            raise HTTPException(502, str(error)) from error
+
+    @app.get("/api/github/branches")
+    def github_branches(request: Request, repository: str = Query(max_length=256),
+                        page: int = Query(1, ge=1, le=1000)):
+        current(request)
+        try:
+            slug = parse_repository_url(repository)
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
+        try:
+            return {"repository": f"https://github.com/{slug}", **hosted_catalog.branches(slug, page)}
+        except hosted_catalog.CatalogError as error:
+            raise HTTPException(502, str(error)) from error
+
     @app.post("/api/jobs", status_code=202)
     async def submit(request: Request):
-        user = current(request, write=True)
+        session = await asyncio.to_thread(current, request, write=True)
         if request.headers.get("content-type", "").split(";", 1)[0] != "application/json":
             raise HTTPException(415, "Send the analysis form as JSON.")
         body = bytearray()
@@ -265,7 +300,7 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
         except ValueError as error:
             raise HTTPException(422, str(error)) from error
         try:
-            job = await asyncio.to_thread(store.submit, user.id, payload)
+            job = await asyncio.to_thread(store.submit, session.user.id, payload)
         except OverflowError as error:
             raise HTTPException(429, str(error)) from error
         request.app.state.wake.set()
@@ -273,19 +308,19 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
 
     @app.get("/api/jobs")
     async def jobs(request: Request):
-        user = current(request)
+        session = await asyncio.to_thread(current, request)
         request.app.state.wake.set()
-        return [_public_job(job) for job in await asyncio.to_thread(store.list, user.id)]
+        return [_public_job(job) for job in await asyncio.to_thread(store.list, session.user.id)]
 
     @app.get("/api/jobs/{job_id}")
     async def job(request: Request, job_id: str):
-        user = current(request)
+        session = await asyncio.to_thread(current, request)
         request.app.state.wake.set()
-        return _public_job(await asyncio.to_thread(owned_job, user.id, job_id), detail=True)
+        return _public_job(await asyncio.to_thread(owned_job, session.user.id, job_id), detail=True)
 
     @app.get("/api/jobs/{job_id}/patch")
     def patch(request: Request, job_id: str):
-        job = owned_job(current(request).id, job_id)
+        job = owned_job(current(request).user.id, job_id)
         patch_data = (job.get("result") or {}).get("patch_b64")
         if not patch_data:
             raise HTTPException(404, "This analysis has no verified patch.")
@@ -294,7 +329,7 @@ def create_app(*, store=None, auth=None, origin=None, analyzer=_run_analysis):
 
     @app.delete("/api/jobs/{job_id}", status_code=204)
     def delete(request: Request, job_id: str):
-        user = current(request, write=True)
+        user = current(request, write=True).user
         owned_job(user.id, job_id)
         if not store.delete(user.id, job_id):
             raise HTTPException(409, "Wait for the analysis to finish before deleting it.")

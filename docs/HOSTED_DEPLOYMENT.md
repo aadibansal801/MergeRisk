@@ -1,11 +1,14 @@
 # Hosted MergeRisk beta
 
-The website runs on FastAPI and uses existing MergeRisk static analysis. Anyone with a GitHub account can sign in. The first successful sign-in creates a MergeRisk account. A user enters a public repository URL and two branch names, and receives findings about the recorded revisions. An exact, statically verified repair can be downloaded as a Git patch against the candidate merge tree. The local CLI and dashboard continue to use the local contract.
+The website runs on FastAPI and uses existing MergeRisk static analysis. Anyone with a GitHub account can sign in. The first successful sign-in creates a MergeRisk account. An analysis compares two branches of a public repository and reports findings about the recorded revisions. An exact, statically verified repair can be downloaded as a Git patch against the candidate merge tree. The local CLI and dashboard continue to use the local contract.
+
+The form loads public repositories from the signed-in GitHub account and fetches branches for the selected repository. Other public repositories can be loaded by URL. Lookup pages are cached briefly and use GitHub's public API limits.
 
 ## Runtime and data
 
 - One web process serves the UI and API and runs one analysis worker at a time. The GitHub fetch and analysis run in a disposable child process with service secrets excluded. Use Git 2.43 or newer. The Dockerfile checks Git during the build.
 - The account table is created automatically on startup. It stores the numeric GitHub ID, current login, and creation time. Report ownership uses the numeric ID, so a username change preserves access to unexpired analyses. OAuth access tokens are used only to look up the GitHub profile.
+- Signing out revokes the current MergeRisk session in PostgreSQL before the browser cookie is cleared. The service stores a hash of the cookie until its original expiry, and the worker removes expired records. Requests with a signed-in cookie require the database to check revocation. Other sessions for the same account stay signed in.
 - Accept public `https://github.com/owner/repo` URLs and explicit branches. Fetch only the requested histories. The hosted worker uses static analysis and a disposable Git index to verify exported patch bytes and discard its source workspace.
 - Owner queries hide reports at 24 hours. The active worker checks for expired rows at least every minute when idle. Host sleep, database outages and provider backup retention can delay physical removal. The website also lets the owner delete completed runs. Treat patches and finding excerpts as source data. Keep request URLs, OAuth values, repository text and patches out of production logs.
 - Admission is capped at one active job per user, four active jobs globally, five submissions per user per hour and fifty per day. A stopped running job becomes a visible failure after its lease expires. The user submits a new run if they want to compare the current branch tips. Queued jobs survive restarts.

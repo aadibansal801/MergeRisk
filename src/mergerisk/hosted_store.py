@@ -24,6 +24,11 @@ _SCHEMA = (
         login TEXT NOT NULL,
         created DOUBLE PRECISION NOT NULL
     )""",
+    """CREATE TABLE IF NOT EXISTS hosted_session_revocations (
+        token_hash TEXT PRIMARY KEY,
+        expires DOUBLE PRECISION NOT NULL
+    )""",
+    "CREATE INDEX IF NOT EXISTS hosted_session_revocations_expires ON hosted_session_revocations (expires)",
     """CREATE TABLE IF NOT EXISTS queue_lock (
         singleton INTEGER PRIMARY KEY CHECK (singleton = 1)
     )""",
@@ -119,6 +124,7 @@ class HostedStore:
         cutoff = now - _RETENTION
         self._execute(db, "DELETE FROM hosted_admissions WHERE created <= ?", (cutoff,))
         self._execute(db, "DELETE FROM hosted_jobs WHERE created <= ?", (cutoff,))
+        self._execute(db, "DELETE FROM hosted_session_revocations WHERE expires <= ?", (now,))
         # A fresh fetch might resolve the selected branches to different commits.
         self._execute(db, """UPDATE hosted_jobs SET state = 'error', updated = ?,
             error = 'Analysis stopped before completion. Start a new run.', lease_token = NULL, lease_until = NULL
@@ -130,6 +136,17 @@ class HostedStore:
             self._execute(db, """INSERT INTO hosted_accounts (github_id, login, created)
                 VALUES (?, ?, ?) ON CONFLICT (github_id) DO UPDATE SET login = excluded.login""",
                           (github_id, login, time.time()))
+
+    def is_session_revoked(self, token_hash: str) -> bool:
+        with self._connect() as db:
+            row = self._execute(db, "SELECT 1 FROM hosted_session_revocations WHERE token_hash = ?",
+                                (token_hash,)).fetchone()
+        return row is not None
+
+    def revoke_session(self, token_hash: str, expires: int) -> None:
+        with self._connect() as db:
+            self._execute(db, """INSERT INTO hosted_session_revocations (token_hash, expires)
+                VALUES (?, ?) ON CONFLICT (token_hash) DO NOTHING""", (token_hash, expires))
 
     def submit(self, owner: str, request: dict) -> dict:
         identifier = uuid.uuid4().hex
@@ -181,8 +198,9 @@ class HostedStore:
             now = time.time()
             pending = self._execute(db, """SELECT 1 FROM hosted_jobs WHERE state = 'queued'
                 OR (state = 'running' AND lease_until <= ?) OR created <= ?
-                UNION ALL SELECT 1 FROM hosted_admissions WHERE created <= ? LIMIT 1""",
-                                    (now, now - _RETENTION, now - _RETENTION)).fetchone()
+                UNION ALL SELECT 1 FROM hosted_admissions WHERE created <= ?
+                UNION ALL SELECT 1 FROM hosted_session_revocations WHERE expires <= ? LIMIT 1""",
+                                    (now, now - _RETENTION, now - _RETENTION, now)).fetchone()
             if pending is None:
                 return None
             now = self._lock_queue(db)

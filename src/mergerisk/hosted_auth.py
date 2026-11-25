@@ -63,6 +63,13 @@ class User:
     csrf: str
 
 
+@dataclass(frozen=True)
+class Session:
+    user: User
+    token_hash: str
+    expires: int
+
+
 class GitHubAuth:
     def __init__(self, client_id: str, client_secret: str, session_secret: str, origin: str, *, secure: bool = True):
         self.client_id = client_id
@@ -147,11 +154,16 @@ class GitHubAuth:
         session = self._seal("session", {"id": user.id, "login": user.login, "csrf": user.csrf}, _SESSION_AGE)
         self._set_cookie(response, self.session_cookie, session, _SESSION_AGE)
 
-    def user(self, request: BrowserRequest) -> User | None:
-        session = self._open("session", request.cookies.get(self.session_cookie, ""))
+    def session(self, request: BrowserRequest) -> Session | None:
+        token = request.cookies.get(self.session_cookie, "")
+        session = self._open("session", token)
         if session is None:
             return None
-        return User(session["id"], session["login"], session["csrf"])
+        return Session(
+            user=User(session["id"], session["login"], session["csrf"]),
+            token_hash=hashlib.sha256(token.encode("ascii")).hexdigest(),
+            expires=session["exp"],
+        )
 
     def require_csrf(self, request: BrowserRequest, user: User) -> None:
         csrf = request.headers.get("x-csrf-token", "")
