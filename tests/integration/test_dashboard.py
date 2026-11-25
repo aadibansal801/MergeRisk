@@ -13,8 +13,11 @@ from mergerisk.sample import create_sample, FIXED
 from mergerisk.service import MergeService
 
 
+DASHBOARD_ACCESS = "synthetic-dashboard-access-for-tests-only"
+
+
 def session(client):
-    page = client.get("/")
+    page = client.get("/", params={"access": DASHBOARD_ACCESS})
     assert page.status_code == 200
     token = re.search(r'name="csrf-token" content="([^"]+)"', page.text).group(1)
     return {"X-CSRF-Token": token}
@@ -38,7 +41,7 @@ def expected(run):
 def setup(tmp_path):
     repo = tmp_path / "sample repo ü"
     create_sample(repo)
-    app = create_app(tmp_path / "state")
+    app = create_app(tmp_path / "state", access_token=DASHBOARD_ACCESS)
     with TestClient(app, base_url="http://127.0.0.1") as client:
         headers = session(client)
         response = client.post("/api/repositories", json={"path": str(repo)}, headers=headers)
@@ -91,6 +94,14 @@ def test_auth_csrf_origin_host_and_body_limits(setup):
     assert client.post("/api/runs", content="x", headers=headers).status_code == 415
     client.cookies.clear()
     assert client.get("/api/repositories").status_code == 401
+    for params in ({}, {"access": "invalid"}):
+        home = client.get("/", params=params)
+        assert home.status_code == 401 and "set-cookie" not in home.headers
+        assert "csrf-token" not in home.text
+    authenticated = client.get("/", params={"access": DASHBOARD_ACCESS}, follow_redirects=False)
+    assert authenticated.status_code == 303 and authenticated.headers["location"] == "/"
+    assert authenticated.headers["referrer-policy"] == "no-referrer"
+    assert client.get("/api/repositories").status_code == 200
 
 
 def test_unregistered_traversal_extra_fields_and_settings(setup):
@@ -133,6 +144,20 @@ def test_branch_movement_refuses_stale_commit(setup):
     assert not run_git(repo, ["for-each-ref", "refs/mergerisk/"]).stdout
 
 
+def test_dashboard_refuses_to_verify_a_changed_preview(setup, monkeypatch):
+    from types import SimpleNamespace
+
+    client, headers, repo_id, _, _ = setup
+    result = client.post(f"/api/repositories/{repo_id}/settings", headers=headers,
+                         json={"image": "sha256:" + "a" * 64, "command": ["python", "-V"]})
+    assert result.status_code == 200
+    id, run = start(client, headers, repo_id)
+    monkeypatch.setattr(MergeService, "preview", lambda *args, **kwargs: SimpleNamespace(fingerprint="0" * 64))
+    monkeypatch.setattr("mergerisk.dashboard.verify_runtime", lambda *args: pytest.fail("Stale candidate was executed"))
+    response = client.post(f"/api/runs/{id}/verify", json=expected(run), headers=headers)
+    assert response.status_code == 409
+
+
 def test_bounded_jobs_and_cancellation(setup, monkeypatch):
     client, headers, repo_id, repo, app = setup
     entered = threading.Event()
@@ -165,7 +190,7 @@ def test_bounded_jobs_and_cancellation(setup, monkeypatch):
 def test_history_survives_restart(setup):
     client, headers, repo_id, repo, app = setup
     id, run = start(client, headers, repo_id)
-    restored = create_app(app.state.history.directory)
+    restored = create_app(app.state.history.directory, access_token=DASHBOARD_ACCESS)
     with TestClient(restored, base_url="http://127.0.0.1") as second:
         session(second)
         assert second.get(f"/api/runs/{id}").json()["result"]["fingerprint"] == run["result"]["fingerprint"]

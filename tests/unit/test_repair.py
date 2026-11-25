@@ -37,6 +37,26 @@ def test_historical_import_restoration(body):
     assert result.candidate["app.py"] == right
 
 
+def test_import_restoration_refuses_rebound_historical_name():
+    base = b"import json as value\nvalue = 7\n\ndef first():\n return 1\n"
+    left = b"\n\ndef first():\n return 1\n"
+    use = b"\ndef later():\n return value\n"
+    _, _, result = exercise([base, left, base + use, left + use])
+    assert any(p.rule_id == "MR-PY-IMPORT-001" and p.tier == "REPORT_ONLY" for p in result.plans)
+    assert result.candidate["app.py"] == left + use
+
+
+def test_rename_review_uses_exact_unicode_identifier_bytes():
+    base = b"def old_name(x):\n return x\n"
+    left = base.replace(b"old_name", b"new_name")
+    use = "\ndef caller():\n return ｏld_name( 2 )\n".encode("utf-8")
+    versions, analysis, result = exercise([base, left, base + use, left + use])
+    plan = next(p for p in result.plans if p.tier == "SUGGEST")
+    assert plan.edits[0].before == "ｏld_name".encode("utf-8")
+    accepted = repair_candidate(versions, CONTEXT, analysis, {plan.id})
+    assert accepted.candidate["app.py"] == left + use.replace(plan.edits[0].before, b"new_name")
+
+
 def test_stale_and_overlapping_edits_are_rejected_atomically():
     raw = [(FIXTURES / "json" / f"{role}.py").read_bytes() for role in ("base", "left", "right", "merged")]
     versions, analysis, result = exercise(raw)

@@ -5,8 +5,10 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import sqlite3
+import stat
 import threading
 import uuid
 
@@ -17,11 +19,39 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def private_state_directory(directory: Path) -> Path:
+    directory = directory.resolve()
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if os.name == "posix":
+        info = directory.stat()
+        if info.st_uid != os.geteuid() or info.st_mode & 0o022:
+            raise ValueError("Dashboard state must be owned by you and writable only by you.")
+    return directory
+
+
+def _protect_database(path: Path) -> None:
+    if os.name != "posix":
+        return
+    for name in (path.name, path.name + "-wal", path.name + "-shm", path.name + "-journal"):
+        try:
+            flags = os.O_RDWR | os.O_CREAT if name == path.name else os.O_RDONLY
+            fd = os.open(path.with_name(name), flags | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+        except FileNotFoundError:
+            continue
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or info.st_nlink != 1:
+                raise ValueError("Dashboard database files must be regular files owned only by you.")
+            os.fchmod(fd, 0o600)
+        finally:
+            os.close(fd)
+
+
 class History:
     def __init__(self, directory: Path):
-        self.directory = directory.resolve()
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self.directory = private_state_directory(directory)
         self.path = self.directory / "history.sqlite3"
+        _protect_database(self.path)
         with self.connect() as db:
             db.executescript("""
                 PRAGMA journal_mode=WAL;

@@ -7,7 +7,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import signal
 import subprocess
 import sys
@@ -15,7 +14,7 @@ from tempfile import TemporaryDirectory, TemporaryFile
 from time import monotonic, sleep
 
 from mergerisk.git import UnresolvedParentError
-from mergerisk.git.plumbing import run_git, tree_entries
+from mergerisk.git.plumbing import installed_tool, run_git, tree_entries
 from mergerisk.service import MergePreview, MergeService
 
 
@@ -97,7 +96,7 @@ def _stop_fetch(process: subprocess.Popen) -> None:
 
 
 def _fetch(repo: Path, slug: str, target: str, source: str) -> None:
-    git = shutil.which("git")
+    git = installed_tool("git", repo)
     if git is None:
         raise HostedIngestError("The analysis worker cannot find Git.")
     args = [git, "-C", str(repo), "-c", "http.followRedirects=false", "-c", "http.sslVerify=true",
@@ -114,7 +113,7 @@ def _fetch(repo: Path, slug: str, target: str, source: str) -> None:
             "os.execv(sys.argv[2], sys.argv[2:])",
         ))
         args = [sys.executable, "-I", "-c", wrapper, str(_MAX_PACK_BYTES), *args]
-        if watchdog := shutil.which("timeout"):
+        if watchdog := installed_tool("timeout", repo):
             # Bound the fetch group even if the supervising analysis worker is killed.
             args = [watchdog, "--signal=KILL", str(_FETCH_TIMEOUT), *args]
     deadline = monotonic() + _FETCH_TIMEOUT
@@ -154,13 +153,15 @@ def _fetch(repo: Path, slug: str, target: str, source: str) -> None:
 
 
 def _check_tree_sizes(repo: Path, revisions: tuple[str, str, str]) -> None:
-    blobs = {oid for rev in revisions for _, kind, oid in tree_entries(repo, rev).values() if kind == "blob"}
-    query = "".join(f"{oid}\n" for oid in sorted(blobs)).encode("ascii")
+    snapshots = [[oid for _, kind, oid in tree_entries(repo, rev).values() if kind == "blob"] for rev in revisions]
+    blobs = sorted({oid for snapshot in snapshots for oid in snapshot})
+    query = "".join(f"{oid}\n" for oid in blobs).encode("ascii")
     sizes = run_git(repo, ["cat-file", "--batch-check=%(objectsize)"], data=query).stdout.splitlines()
     if len(sizes) != len(blobs) or any(not size.isdigit() for size in sizes):
         raise HostedIngestError("Git returned incomplete repository objects.")
-    lengths = [int(size) for size in sizes]
-    if any(size > _MAX_TREE_BLOB_BYTES for size in lengths) or sum(lengths) > _MAX_TREE_BYTES:
+    lengths = dict(zip(blobs, map(int, sizes)))
+    if (any(size > _MAX_TREE_BLOB_BYTES for size in lengths.values()) or sum(lengths.values()) > _MAX_TREE_BYTES
+            or any(sum(lengths[oid] for oid in snapshot) > _MAX_TREE_BYTES for snapshot in snapshots)):
         raise HostedIngestError("Repository source snapshots exceed the hosted size limit.")
 
 

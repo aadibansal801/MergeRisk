@@ -5,14 +5,22 @@ import argparse
 from importlib.metadata import version
 import json
 from pathlib import Path
-import shutil
+import re
 import sys
 
 from mergerisk.analysis.pipeline import AnalysisOrchestrator
+from mergerisk.git.plumbing import installed_tool
 from mergerisk.reporting.summary import ReportFormatter
 from mergerisk.repair import decode_source
 from mergerisk.rules.catalog import RULES
 from mergerisk.service import MergeService
+
+
+_TERMINAL_CONTROLS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\ud800-\udfff]")
+
+
+def _terminal(text: str) -> str:
+    return _TERMINAL_CONTROLS.sub(lambda match: match[0].encode("unicode_escape").decode("ascii"), text)
 
 
 def _parser():
@@ -74,9 +82,9 @@ def main(argv=None):
             from mergerisk.git import GitScenarioAssembler
             asm = GitScenarioAssembler(Path(args.repo))
             print(f"MergeRisk {version('mergerisk')} | Python {sys.version.split()[0]} | {asm.git_version}")
-            print("Git worktree: " + str(asm.repo_path))
+            print(_terminal("Git worktree: " + str(asm.repo_path)))
             print("Dashboard: bundled FastAPI/Jinja assets")
-            print("Runtime: " + ("Docker executable found; isolated verification needs explicit configuration." if shutil.which("docker") else "validation_unavailable (Docker not found)."))
+            print("Runtime: " + ("Docker executable found; isolated verification needs explicit configuration." if installed_tool("docker", asm.repo_path) else "validation_unavailable (Docker not found)."))
             return 0
         if args.command == "dashboard":
             if not 1024 <= args.port <= 65535:
@@ -87,7 +95,7 @@ def main(argv=None):
         if args.command == "fixture":
             paths = [Path(getattr(args, k)) for k in ("base", "left", "right", "merged")]
             result = AnalysisOrchestrator().analyze_sources(*({paths[-1].name: decode_source(p.read_bytes())} for p in paths))
-            print(json.dumps(result.to_dict(), ensure_ascii=True, sort_keys=True, indent=2) if output == "json" else ReportFormatter().format_terminal(result))
+            print(json.dumps(result.to_dict(), ensure_ascii=True, sort_keys=True, indent=2) if output == "json" else _terminal(ReportFormatter().format_terminal(result)))
             return 0
         if args.command == "merge" and args.apply and not args.create_commit:
             raise ValueError("--apply requires --create-commit; it explicitly changes the current branch")
@@ -107,7 +115,7 @@ def main(argv=None):
         if not preview.scenario.is_clean:
             code = 2
             if output != "json":
-                print("Candidate merge has conflicts in: " + ", ".join(preview.scenario.conflict_files), file=sys.stderr)
+                print(_terminal("Candidate merge has conflicts in: " + ", ".join(preview.scenario.conflict_files)), file=sys.stderr)
         elif args.command == "analyze":
             report.update(preview.original.to_dict())
             code = 3 if preview.original.findings else 0
@@ -125,12 +133,12 @@ def main(argv=None):
         else:
             print(f"Git: {report['merge_status']} | Validation: {report['validation']}")
             if preview.original:
-                print(ReportFormatter().format_terminal(preview.original))
+                print(_terminal(ReportFormatter().format_terminal(preview.original)))
             else:
-                print("Textual conflicts: " + ", ".join(preview.scenario.conflict_files))
+                print(_terminal("Textual conflicts: " + ", ".join(preview.scenario.conflict_files)))
             for plan in report["repairs"]:
-                print(f"{plan['tier']} {plan['id']} - {plan['status']}: {plan['reason']}")
-                print(plan["diff"])
+                print(_terminal(f"{plan['tier']} {plan['id']} - {plan['status']}: {plan['reason']}"))
+                print(_terminal(plan["diff"]))
             if "artifact" in report:
                 print("Created commit: " + report["artifact"]["commit"])
                 print("Reference: " + report["artifact"]["ref"])
@@ -143,7 +151,7 @@ def main(argv=None):
                 failure["artifact"] = artifact
             print(json.dumps(failure, ensure_ascii=True, sort_keys=True))
         else:
-            print(f"MergeRisk: {error}", file=sys.stderr)
+            print(_terminal(f"MergeRisk: {error}"), file=sys.stderr)
             if artifact:
                 print("Created artifact retained at " + artifact["ref"], file=sys.stderr)
         return 1

@@ -4,6 +4,8 @@ from __future__ import annotations
 import ast
 import copy
 import difflib
+import symtable
+import unicodedata
 import hashlib
 import re
 from dataclasses import dataclass, field, replace
@@ -114,6 +116,14 @@ def _import_edit(issue: MechanicalIssue, data: bytes, sources) -> tuple[tuple[Te
     merged = inspect_python(decode_source(data), issue.path)
     if parent.limitations or merged.limitations:
         return (), "Dynamic or unsupported scope prevents automatic restoration."
+    name = site.name
+    binding = symtable.symtable(parent.source, issue.path, "exec").lookup(name)
+    uses = [r for r in parent.references if r.name == name and r.scope == issue.reference.scope]
+    if (not binding.is_imported() or binding.is_assigned() or len([i for i in parent.imports if i.name == name]) != 1
+            or not uses or any(not r.is_global for r in uses)
+            or any(isinstance(n, ast.Name) and n.id == name and isinstance(n.ctx, (ast.Store, ast.Del))
+                   for n in ast.walk(parent.tree))):
+        return (), "The using branch does not prove that the historical import supplied this name."
     resolver = ImportResolver(set(sources["merge"]))
     target = (site.node.names[0].name if isinstance(site.node, ast.Import) else
               resolver._absolute_from_module(issue.path, site.node.module or "", site.node.level))
@@ -207,10 +217,17 @@ def propose(versions: dict[str, dict[str, bytes]], context: RevisionContext, ana
             model = inspect_python(decode_source(data), path)
             refs = [r for r in model.references if r.missing and r.name == issue.reference.name and r.scope == issue.reference.scope]
             encoding = source_encoding(data).replace("utf-8-sig", "utf-8")
-            edits = tuple(TextEdit(byte_offset(data, r.node.lineno, r.node.col_offset),
-                                   byte_offset(data, r.node.end_lineno, r.node.end_col_offset),
-                                   r.name.encode(encoding), issue.replacement.encode(encoding)) for r in refs)
-            level, reason = "SUGGEST", "Unique candidate from history or spelling; explicit review must establish intended identity."
+            try:
+                replacement = issue.replacement.encode(encoding)
+                spans = [(byte_offset(data, r.node.lineno, r.node.col_offset),
+                          byte_offset(data, r.node.end_lineno, r.node.end_col_offset)) for r in refs]
+                edits = tuple(TextEdit(start, end, data[start:end], replacement) for start, end in spans)
+                if edits and all(unicodedata.normalize("NFKC", edit.before.decode(encoding)) == issue.reference.name for edit in edits):
+                    level, reason = "SUGGEST", "Unique candidate from history or spelling; explicit review must establish intended identity."
+                else:
+                    edits = ()
+            except UnicodeError:
+                edits = ()
         tree = context.merge_tree or ""
         plan_id = digest(repr((tree, finding.finding_id, digest(data), edits)).encode())[:20]
         plan = RepairPlan(plan_id, finding.finding_id, finding.rule_id, path, tree, digest(data), level, reason, edits)
@@ -249,7 +266,10 @@ def _keyword_edits(finding, path, data, sources):
             if len(differences) != 1:
                 continue
             old, new = differences[0]
-            if (any(isinstance(n, ast.Name) and n.id == new for statement in base.body for n in ast.walk(statement))
+            if (any((isinstance(n, ast.Name) and n.id == new)
+                    or (isinstance(n, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and n.name == new)
+                    or (isinstance(n, ast.MatchMapping) and n.rest == new)
+                    for statement in base.body for n in ast.walk(statement))
                     or any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda, ast.Import, ast.ImportFrom,
                                           ast.Global, ast.Nonlocal, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp))
                            for statement in base.body for n in ast.walk(statement))):
@@ -279,7 +299,11 @@ def _keyword_edits(finding, path, data, sources):
             for keyword in node.keywords:
                 if keyword.arg == old:
                     start = byte_offset(data, keyword.lineno, keyword.col_offset)
-                    edits.append(TextEdit(start, start + len(old.encode(encoding)), old.encode(encoding), new.encode(encoding)))
+                    before = old.encode(encoding)
+                    end = start + len(before)
+                    if data[start:end] != before:
+                        return ()
+                    edits.append(TextEdit(start, end, before, new.encode(encoding)))
         return tuple(edits)
     except (KeyError, SyntaxError, ValueError):
         return ()

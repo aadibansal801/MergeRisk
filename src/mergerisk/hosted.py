@@ -32,6 +32,7 @@ _ASSETS = Path(__file__).parent
 _MAX_REPORT_BYTES = 512 * 1024
 _WORKER_SECONDS = 150
 _HEARTBEAT_SECONDS = 5
+_MAINTENANCE_SECONDS = 60
 
 
 class RunInput(BaseModel):
@@ -80,7 +81,10 @@ def _run_analysis(payload):
 
 async def _worker(store, analyzer, wake, stop):
     while not stop.is_set():
-        await wake.wait()
+        try:
+            await asyncio.wait_for(wake.wait(), timeout=_MAINTENANCE_SECONDS)
+        except asyncio.TimeoutError:
+            pass
         wake.clear()
         if stop.is_set():
             break

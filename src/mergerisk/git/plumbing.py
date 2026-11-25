@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import queue
 from pathlib import Path, PurePosixPath
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -13,7 +14,32 @@ def environment(overrides=None):
     env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
     env.update({"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_TERMINAL_PROMPT": "0", "GIT_NO_REPLACE_OBJECTS": "1"})
     env.update(overrides or {})
+    env.update(GIT_NO_LAZY_FETCH="1", GIT_ALLOW_PROTOCOL="")
     return env
+
+
+def installed_tool(name: str, repo: Path | None = None) -> str | None:
+    """Use an installed executable without implicit current-directory search."""
+    filename = name + ".exe" if os.name == "nt" else name
+    cwd = Path.cwd().resolve()
+    root = repo.resolve() if repo is not None else None
+    for entry in os.get_exec_path():
+        directory = Path(entry.strip('"') if os.name == "nt" else entry)
+        if not directory.is_absolute():
+            continue
+        path = shutil.which(str(directory / filename))
+        if path:
+            executable = Path(path).resolve()
+            if executable.parent != cwd and (root is None or not executable.is_relative_to(root)):
+                return str(executable)
+    return None
+
+
+def _git(repo):
+    git = installed_tool("git", repo)
+    if git is None:
+        raise FileNotFoundError("Git executable was not found on the installed PATH.")
+    return git
 
 
 def bounded_run(argv, *, data: bytes = b"", env=None, timeout=30, limit=64 * 1024 * 1024):
@@ -54,7 +80,7 @@ def bounded_run(argv, *, data: bytes = b"", env=None, timeout=30, limit=64 * 102
 
 
 def run_git(repo: Path, args, *, data=b"", env=None, check=True, config=()):
-    result = bounded_run(["git", "-c", f"core.hooksPath={os.devnull}", "-c", "core.fsmonitor=false",
+    result = bounded_run([_git(repo), "-c", f"core.hooksPath={os.devnull}", "-c", "core.fsmonitor=false",
                           "-c", f"core.attributesFile={os.devnull}", "-c", "core.quotePath=false",
                           "-c", "merge.verifySignatures=false", "-c", "commit.gpgSign=false",
                           *(part for item in config for part in ("-c", item)), "-C", str(repo), *args],
@@ -70,7 +96,7 @@ def git_identity(repo: Path):
     env.pop("GIT_CONFIG_GLOBAL", None)
     values = {}
     for field in ("name", "email"):
-        result = bounded_run(["git", "-C", str(repo), "config", "--includes", "--get", "user." + field], env=env, limit=16384)
+        result = bounded_run([_git(repo), "-C", str(repo), "config", "--includes", "--get", "user." + field], env=env, limit=16384)
         value = result.stdout.decode("utf-8", "strict").strip()
         if result.returncode or not value or any(c in value for c in "\0\r\n"):
             raise ValueError("Git author identity is missing or invalid. Configure git user.name and user.email before creating a commit.")
@@ -155,7 +181,7 @@ class PreparedRefUpdate:
             raise RuntimeError("Git refused the expected branch update; references are stale or locked")
 
     def __enter__(self):
-        self.process = subprocess.Popen(["git", "-c", f"core.hooksPath={os.devnull}", "-C", str(self.repo),
+        self.process = subprocess.Popen([_git(self.repo), "-c", f"core.hooksPath={os.devnull}", "-C", str(self.repo),
                                          "update-ref", "-m", "MergeRisk checked fast-forward", "--stdin"], stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=environment(), bufsize=0)
 

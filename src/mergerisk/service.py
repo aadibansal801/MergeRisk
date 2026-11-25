@@ -16,6 +16,9 @@ from mergerisk.git.plumbing import PreparedRefUpdate, git_identity, read_blobs, 
 from mergerisk.repair import RepairResult, decode_source, digest, repair_candidate, static_defects, text_versions
 
 
+_SOURCE_LIMIT = 64 * 1024 * 1024
+
+
 @dataclass
 class MergePreview:
     scenario: GitScenario
@@ -68,7 +71,7 @@ class MergeService:
                     and RepositoryInventory._ignore_reason(p, list(AnalysisConfig().ignore_patterns)) is None}
         missing = {oid for _, _, oid in selected.values()} - self._blobs.keys()
         self._blobs.update(read_blobs(self.repo, missing))
-        if sum(len(b) for b in self._blobs.values()) > 64 * 1024 * 1024:
+        if sum(len(b) for b in self._blobs.values()) > _SOURCE_LIMIT:
             raise ValueError("Four-version source exceeds 64 MiB limit")
         return {p: self._blobs[oid] for p, (_, _, oid) in selected.items()}, entries
 
@@ -83,32 +86,41 @@ class MergeService:
         identity = digest(json.dumps(asdict(scenario), sort_keys=True).encode())
         if not scenario.is_clean:
             return MergePreview(scenario, None, None, {}, [], identity)
-        versions, entries = {}, {}
+        versions, entries, logical_bytes = {}, {}, 0
         for role, revision in (("base", scenario.base_commit), ("left", scenario.left_commit),
                                ("right", scenario.right_commit), ("merge", scenario.merge_tree)):
             checkpoint(f"Reading immutable {role} snapshot")
             versions[role], entries[role] = self._sources(revision)
+            logical_bytes += sum(map(len, versions[role].values()))
+            if logical_bytes > _SOURCE_LIMIT:
+                raise ValueError("Four-version source exceeds 64 MiB across tracked Python paths")
         context = RevisionContext(scenario.base_commit, scenario.left_commit, scenario.right_commit, scenario.merge_tree)
         sources = text_versions(versions)
         checkpoint("Resolving Python references and branch provenance")
         analysis = AnalysisOrchestrator().analyze_sources(*(sources[r] for r in ("base", "left", "right", "merge")), context)
-        unsupported = len(versions["merge"]) - len(sources["merge"])
-        special = sum(v[0] not in {"100644", "100755"} for v in entries["merge"].values())
-        if unsupported or special:
-            analysis = replace(analysis, status=AnalysisStatus.PARTIAL,
-                               coverage=replace(analysis.coverage, files_unsupported=analysis.coverage.files_unsupported + unsupported + special),
-                               notes=analysis.notes + [f"{unsupported} undecodable source files and {special} symlink/submodule entries not analyzed."])
-        analysis = replace(analysis, coverage=replace(analysis.coverage, files_skipped=len(entries["merge"]) - len(versions["merge"])),
-                           manifest={**analysis.manifest, "git_version": scenario.git_version})
+        omitted = {role: len(versions[role]) - len(sources[role]) for role in versions}
+        special = {role: sum(v[0] not in {"100644", "100755"} for v in entries[role].values()) for role in versions}
+        unsupported = sum(omitted.values()) + sum(special.values())
+        inventory_notes = [f"{role}: {omitted[role]} undecodable or binary Python files and {special[role]} symlink/submodule entries not analyzed."
+                           for role in versions if omitted[role] or special[role]]
+
+        def include_inventory(result):
+            status = AnalysisStatus.PARTIAL if unsupported and result.status == AnalysisStatus.SUCCESS else result.status
+            return replace(result, status=status, notes=result.notes + inventory_notes,
+                           coverage=replace(result.coverage,
+                                            files_unsupported=result.coverage.files_unsupported + unsupported,
+                                            files_skipped=len(entries["merge"]) - len(versions["merge"]) - special["merge"]),
+                           manifest={**result.manifest, "git_version": scenario.git_version})
+
+        analysis = include_inventory(analysis)
         preexisting = []
         for role in ("base", "left", "right"):
             checkpoint(f"Recording {role} static defects")
             preexisting.extend({"role": role, "kind": k, "path": p, "detail": d} for k, p, d in sorted(static_defects(sources[role])))
         checkpoint("Planning exact edits and validating the candidate")
         repair = repair_candidate(versions, context, analysis, accepted)
-        if analysis.coverage.files_unsupported:
-            repair.analysis = replace(repair.analysis, status=AnalysisStatus.PARTIAL, coverage=replace(repair.analysis.coverage,
-                                      files_unsupported=max(analysis.coverage.files_unsupported, repair.analysis.coverage.files_unsupported)))
+        if repair.analysis is not analysis:
+            repair.analysis = include_inventory(repair.analysis)
         identity = digest((identity + json.dumps([p.to_dict() for p in repair.plans], sort_keys=True)).encode())
         checkpoint("Complete")
         return MergePreview(scenario, analysis, repair, versions, preexisting, identity)
@@ -153,11 +165,11 @@ class MergeService:
         commit = run_git(self.repo, ["commit-tree", tree, "-p", scenario.left_commit, "-p", scenario.right_commit],
                          data=message.encode(), env=git_identity(self.repo)).stdout.decode().strip()
         ref = "refs/mergerisk/" + uuid.uuid4().hex
-        run_git(self.repo, ["update-ref", ref, commit, "0" * len(commit)])
         parents = run_git(self.repo, ["rev-list", "--parents", "-n", "1", commit]).stdout.decode().split()
         actual_tree = run_git(self.repo, ["rev-parse", f"{commit}^{{tree}}"]).stdout.decode().strip()
         if parents != [commit, scenario.left_commit, scenario.right_commit] or actual_tree != tree:
             raise RuntimeError("Created commit identities do not match the approved candidate")
+        run_git(self.repo, ["update-ref", ref, commit, "0" * len(commit)])
         return {"commit": commit, "tree": tree, "parents": parents[1:], "ref": ref,
                 "next_steps": [f"git show {ref}", f"git merge --ff-only {ref}"], "applied": False}
 
@@ -186,6 +198,9 @@ class MergeService:
             filters = run_git(self.repo, ["config", "--includes", "--get-regexp", r"^filter\..*\.(clean|smudge|process)$"], check=False)
             if filters.returncode == 0:
                 raise ValueError("Configured external content filters prevent safe automatic checkout")
+            flags = run_git(self.repo, ["ls-files", "-v", "-z"]).stdout.split(b"\0")
+            if any(entry[:1].islower() or entry.startswith(b"S ") for entry in flags):
+                raise ValueError("Apply requires a fully visible index without assume-unchanged or skip-worktree entries")
             status = run_git(self.repo, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored"]).stdout
             if status:
                 raise ValueError("Worktree/index must be clean, including untracked and ignored files")

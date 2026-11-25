@@ -9,13 +9,13 @@ import secrets
 import threading
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field
 
 from mergerisk.git.plumbing import run_git
-from mergerisk.history import History, Jobs
+from mergerisk.history import History, Jobs, private_state_directory
 from mergerisk.rules.catalog import RULES
 from mergerisk.service import MergeService
 from mergerisk.repair import digest
@@ -67,10 +67,13 @@ def _same(supplied: str, secret: str) -> bool:
     return secrets.compare_digest(supplied.encode("utf-8"), secret.encode("utf-8"))
 
 
-def create_app(state_dir: Path | None = None, *, capacity=4):
+def create_app(state_dir: Path | None = None, *, capacity=4, access_token: str | None = None):
     history = History(state_dir or Path.home() / ".mergerisk")
     jobs = Jobs(history, capacity)
     session, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+    access_token = access_token if access_token is not None else secrets.token_urlsafe(32)
+    if len(access_token) < 32:
+        raise ValueError("Dashboard access token is too short.")
 
     @asynccontextmanager
     async def lifespan(app):
@@ -91,9 +94,13 @@ def create_app(state_dir: Path | None = None, *, capacity=4):
         if origin and origin != expected_origin:
             return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
         authenticated = _same(request.cookies.get("mergerisk_session", ""), session)
-        public = request.url.path == "/" or request.url.path.startswith("/static/")
-        if not authenticated and not (request.method == "GET" and public):
-            return JSONResponse({"detail": "Open the dashboard home page to establish a local session"}, status_code=401)
+        if request.method == "GET" and request.url.path == "/" and _same(request.query_params.get("access", ""), access_token):
+            response = RedirectResponse("/", status_code=303, headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
+            response.set_cookie("mergerisk_session", session, httponly=True, samesite="strict")
+            return response
+        if not authenticated and not (request.method == "GET" and request.url.path.startswith("/static/")):
+            return JSONResponse({"detail": "Open the private dashboard link printed by mergerisk dashboard."},
+                                status_code=401, headers={"Cache-Control": "no-store"})
         if request.method not in {"GET", "HEAD"}:
             if not _same(request.headers.get("x-csrf-token", ""), csrf):
                 return JSONResponse({"detail": "Missing or invalid CSRF token"}, status_code=403)
@@ -112,8 +119,6 @@ def create_app(state_dir: Path | None = None, *, capacity=4):
         response.headers.update({"Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
                                  "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
                                  "Cross-Origin-Resource-Policy": "same-origin", "Cache-Control": "no-store"})
-        if request.url.path == "/" and request.method == "GET":
-            response.set_cookie("mergerisk_session", session, httponly=True, samesite="strict", secure=False)
         return response
 
     @app.exception_handler(LookupError)
@@ -260,6 +265,7 @@ def create_app(state_dir: Path | None = None, *, capacity=4):
                 raise HTTPException(409, "This preview already has a commit")
             runtime = run["result"].get("runtime", {})
             if repo["runtime"] and (runtime.get("status") != "runtime_verified"
+                                    or runtime.get("fingerprint") != data.expected
                                     or runtime.get("configuration") != json.loads(repo["runtime"])):
                 raise ValueError("Current configured runtime checks must pass before commit creation")
             service, preview = current_preview(run, repo)
@@ -296,10 +302,13 @@ def create_app(state_dir: Path | None = None, *, capacity=4):
                 if not repo["runtime"]:
                     raise ValueError("Configure an immutable Docker image and command in Settings first")
                 service, preview = current_preview(run, repo)
+                if preview.fingerprint != data.expected:
+                    raise HTTPException(409, "Candidate changed since analysis; start a new merge")
                 config = json.loads(repo["runtime"])
                 result = run["result"]
                 result["runtime"] = verify_runtime(service, preview, RuntimeConfig(config["image"], tuple(config["command"]), config["timeout"]))
                 result["runtime"]["configuration"] = config
+                result["runtime"]["fingerprint"] = preview.fingerprint
                 history.update(id, "complete", "Runtime verification finished", result=result)
                 history.action(id, "verify", result["runtime"])
                 return result["runtime"]
@@ -321,8 +330,8 @@ def create_app(state_dir: Path | None = None, *, capacity=4):
 
 def serve(port=8765, state_dir=None):
     import uvicorn
-    directory = (state_dir or Path.home() / ".mergerisk").resolve()
-    directory.mkdir(parents=True, exist_ok=True)
+    directory = private_state_directory(state_dir or Path.home() / ".mergerisk")
+    access_token = secrets.token_urlsafe(32)
     with (directory / "instance.lock").open("a+b") as lock:
         lock.write(b"\0")
         lock.flush()
@@ -336,5 +345,6 @@ def serve(port=8765, state_dir=None):
                 fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as error:
             raise ValueError("Another dashboard is already using this state directory") from error
-        print(f"MergeRisk dashboard: http://127.0.0.1:{port}")
-        uvicorn.run(create_app(directory), host="127.0.0.1", port=port, proxy_headers=False, server_header=False)
+        print(f"MergeRisk private dashboard link: http://127.0.0.1:{port}/?access={access_token}", flush=True)
+        uvicorn.run(create_app(directory, access_token=access_token), host="127.0.0.1", port=port,
+                    proxy_headers=False, server_header=False, access_log=False)

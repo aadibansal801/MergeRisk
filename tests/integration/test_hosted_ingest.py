@@ -95,3 +95,12 @@ def test_hosted_non_python_merge_is_inconclusive(tmp_path, monkeypatch):
     assert result["status"] == "inconclusive"
     assert result["coverage"]["files_analyzed"] == 0
     assert result["patch_b64"] is None
+
+
+def test_hosted_snapshot_limit_counts_repeated_blob_paths(tmp_path, monkeypatch):
+    _init(tmp_path)
+    _commit(tmp_path, "first.py", b"x = 123\n", "first file")
+    _commit(tmp_path, "second.py", b"x = 123\n", "second file shares a blob")
+    monkeypatch.setattr(hosted_ingest, "_MAX_TREE_BYTES", 12)
+    with pytest.raises(hosted_ingest.HostedIngestError, match="snapshots exceed"):
+        hosted_ingest._check_tree_sizes(tmp_path, ("HEAD", "HEAD", "HEAD"))

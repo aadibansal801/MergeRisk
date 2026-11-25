@@ -4,6 +4,7 @@ from importlib import metadata, resources
 import json
 from pathlib import Path
 import re
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -26,9 +27,10 @@ def smoke():
         safe, unsafe = root / "safe", root / "unsafe"
         revisions = create_sample(safe)
         create_sample(unsafe, unsafe=True)
-        app = create_app(root / "state")
+        access_token = secrets.token_urlsafe(32)
+        app = create_app(root / "state", access_token=access_token)
         with TestClient(app, base_url="http://127.0.0.1") as client:
-            response = client.get("/")
+            response = client.get("/", params={"access": access_token})
             assert response.status_code == 200
             csrf = re.search(r'name="csrf-token" content="([^"]+)"', response.text).group(1)
             headers = {"X-CSRF-Token": csrf}

@@ -2,13 +2,38 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+import json
+import ntpath
+import os
+from pathlib import Path, PureWindowsPath
 import re
-import shutil
+import sys
 import tempfile
+import unicodedata
 import uuid
 
-from mergerisk.git.plumbing import bounded_run, read_blobs, tree_entries, validate_path
+from mergerisk.git.plumbing import bounded_run, installed_tool, read_blobs, tree_entries, validate_path
+
+
+_SNAPSHOT_LIMIT = 32 * 1024 * 1024
+
+
+def _validate_snapshot_paths(entries):
+    spellings = {}
+    for path in entries:
+        validate_path(path)
+        if os.name != "nt" and sys.platform != "darwin":
+            continue
+        parts = path.split("/")
+        for index, part in enumerate(parts, start=1):
+            if os.name == "nt":
+                reserved = ntpath.isreserved(part) if hasattr(ntpath, "isreserved") else PureWindowsPath(part).is_reserved()
+                if reserved or part != part.rstrip(" .") or any(c in '<>"|?*' or ord(c) < 32 for c in part):
+                    raise ValueError("A tracked path cannot be represented safely on Windows.")
+            prefix = "/".join(parts[:index])
+            key = unicodedata.normalize("NFC", prefix).casefold()
+            if spellings.setdefault(key, prefix) != prefix:
+                raise ValueError("Runtime snapshot has paths that may alias on the host filesystem.")
 
 
 @dataclass(frozen=True)
@@ -27,36 +52,50 @@ class RuntimeConfig:
 
 
 def verify_runtime(service, preview, config: RuntimeConfig):
-    docker = shutil.which("docker")
     unavailable = {"status": "validation_unavailable", "reason": "Docker sandbox unavailable; no project code was executed.", "runs": []}
-    if not docker or not preview.scenario.is_clean:
+    if service is None or preview is None or not preview.scenario.is_clean:
+        return unavailable
+    docker = installed_tool("docker", service.repo)
+    if not docker:
         return unavailable
     try:
-        info = bounded_run([docker, "image", "inspect", config.image], timeout=10, limit=65536)
+        info = bounded_run([docker, "image", "inspect", "--format", "{{json .Config.Volumes}}", config.image], timeout=10, limit=65536)
         if info.returncode:
             return {**unavailable, "reason": "Configured image is not available locally; no automatic pulls."}
-    except (OSError, RuntimeError) as error:
+        volumes = json.loads(info.stdout)
+        if volumes not in (None, {}):
+            return {**unavailable, "reason": "Runtime images cannot declare writable volumes."}
+    except (OSError, RuntimeError, ValueError) as error:
         return {**unavailable, "reason": str(error)}
     runs = []
     for role, revision in (("left", preview.scenario.left_commit), ("right", preview.scenario.right_commit),
                            ("merge", preview.scenario.merge_tree), ("fixed", preview.scenario.merge_tree)):
-        entries = tree_entries(service.repo, revision)
-        if any(mode not in {"100644", "100755"} for mode, _, _ in entries.values()):
-            return {**unavailable, "reason": "Symlink/submodule snapshots cannot enter the runtime sandbox."}
-        blobs = read_blobs(service.repo, [oid for _, _, oid in entries.values()])
+        try:
+            entries = tree_entries(service.repo, revision)
+            if any(mode not in {"100644", "100755"} for mode, _, _ in entries.values()):
+                raise ValueError("Symlink/submodule snapshots cannot enter the runtime sandbox.")
+            _validate_snapshot_paths(entries)
+            blobs = read_blobs(service.repo, [oid for _, _, oid in entries.values()])
+            replacements = preview.repair.candidate if role == "fixed" else {}
+            snapshot = {path: replacements.get(path, blobs[oid]) for path, (_, _, oid) in entries.items()}
+            if sum(map(len, snapshot.values())) > _SNAPSHOT_LIMIT:
+                raise ValueError("Runtime snapshot exceeds 32 MiB across tracked paths.")
+        except (OSError, RuntimeError, ValueError) as error:
+            return {**unavailable, "reason": str(error), "runs": runs}
         with tempfile.TemporaryDirectory(prefix="mergerisk-runtime-") as temp:
-            root = Path(temp)
+            root = Path(temp) / "snapshot"
+            root.mkdir()
             root.chmod(0o755)
-            for path, (mode, _, oid) in entries.items():
-                validate_path(path)
+            for path, content in snapshot.items():
+                mode = entries[path][0]
                 destination = root / path
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 parent = destination.parent
                 while parent != root:
                     parent.chmod(0o755)
                     parent = parent.parent
-                content = preview.repair.candidate.get(path, blobs[oid]) if role == "fixed" else blobs[oid]
-                destination.write_bytes(content)
+                with destination.open("xb") as stream:
+                    stream.write(content)
                 destination.chmod(0o755 if mode == "100755" else 0o644)
             name = "mergerisk-" + uuid.uuid4().hex
             argv = [docker, "run", "--rm", "--pull=never", "--name", name,
@@ -74,11 +113,18 @@ def verify_runtime(service, preview, config: RuntimeConfig):
             except (OSError, RuntimeError) as error:
                 runs.append({"role": role, "command": list(config.command), "image": config.image, "exit_code": None, "error": str(error)})
             finally:
-                bounded_run([docker, "rm", "-f", name], timeout=10, limit=65536)
-    parents_pass = all(r["exit_code"] == 0 for r in runs[:2])
-    fixed_pass = runs[-1]["exit_code"] == 0
-    return {"status": "runtime_verified" if parents_pass and fixed_pass else "validation_unavailable", "runs": runs,
-            "comparison": ("merge-introduced failure repaired" if parents_pass and runs[2]["exit_code"] != 0 and fixed_pass
-                           else "configured checks passed" if parents_pass and fixed_pass
+                try:
+                    cleanup = bounded_run([docker, "rm", "-f", name], timeout=10, limit=65536)
+                    if cleanup.returncode and b"No such container" not in cleanup.stderr:
+                        runs[-1]["cleanup_error"] = "Docker could not confirm container cleanup."
+                except (OSError, RuntimeError):
+                    runs[-1]["cleanup_error"] = "Docker could not confirm container cleanup."
+            if (runs[-1]["exit_code"] is None or runs[-1]["exit_code"] in {125, 126, 127}
+                    or runs[-1].get("cleanup_error")):
+                return {**unavailable, "reason": "A runtime command or container cleanup did not complete reliably.", "runs": runs}
+    verified = all(runs[i]["exit_code"] == 0 for i in (0, 1, 3))
+    return {"status": "runtime_verified" if verified else "validation_unavailable", "runs": runs,
+            "comparison": ("merge-introduced failure repaired" if verified and runs[2]["exit_code"] != 0
+                           else "configured checks passed" if verified
                            else "parent/environment/candidate failure; insufficient evidence for runtime verification"),
             "scope": "Only the explicitly configured command in a restricted container; not proof of arbitrary behavior."}

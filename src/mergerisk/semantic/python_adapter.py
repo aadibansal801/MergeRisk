@@ -22,6 +22,7 @@ class Reference:
     scope: str
     node: ast.Name
     missing: bool
+    is_global: bool = False
 
 
 @dataclass(frozen=True)
@@ -79,7 +80,7 @@ def inspect_python(source: str, path: str) -> PythonModel:
         limitations.add("Deferred annotations are not evaluated.")
     if limitations:
         # Namespace effects and conditional bindings are not proof of an absent name.
-        visitor.references = [Reference(r.name, r.scope, r.node, False) for r in visitor.references]
+        visitor.references = [Reference(r.name, r.scope, r.node, False, r.is_global) for r in visitor.references]
     return PythonModel(source, tree, visitor.references, visitor.imports, bound, tuple(sorted(limitations)))
 
 
@@ -114,7 +115,7 @@ class _References(ast.NodeVisitor):
             missing = False
         if node.id in {"__name__", "__file__", "__package__", "__doc__", "__spec__", "__builtins__", "__loader__", "__annotations__", "__cached__"}:
             missing = False
-        self.references.append(Reference(node.id, self.scope, node, missing))
+        self.references.append(Reference(node.id, self.scope, node, missing, module or symbol.is_global()))
 
     def visit_Import(self, node: ast.Import):
         for alias in node.names:

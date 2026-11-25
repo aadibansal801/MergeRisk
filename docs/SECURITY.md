@@ -1,6 +1,6 @@
 # Security model
 
-Source is data. Default analysis does not import modules, load plugins, run tests, invoke a shell or execute project hooks/drivers. Git is a trusted installed dependency. Argument arrays, bounded input/output and timeouts are enforced. Operational Git commands ignore global/system configuration and inherited redirection; author identity alone is read as data from normal config. Hooks, signing, fsmonitor, merge drivers/renormalization and replace-object redirection are disabled.
+Source is data. Default analysis does not import modules, load plugins, run tests, invoke a shell or execute project hooks/drivers. Git is a trusted installed dependency selected from absolute PATH entries outside the checkout. Argument arrays, bounded input/output and timeouts are enforced. Operational Git commands ignore global and system configuration, inherited redirection, lazy fetch and remote transports. Author identity alone is read as data from normal config. Hooks, signing, fsmonitor, merge drivers, renormalization and replace-object redirection are disabled.
 
 Paths are normalized repository-relative values. Traversal, .git aliases, drive/alternate-stream separators, control separators and backslash escapes are rejected. Symlink/submodule source payloads are never followed. Registration rejects directory symlinks/junctions and rechecks canonical roots. Preview reads object bytes instead of materializing worktrees.
 
@@ -14,16 +14,16 @@ Worktree updates are not a filesystem-wide atomic transaction. Do not edit or ru
 
 ## Dashboard
 
-The only bind is 127.0.0.1; proxy headers are disabled. Host/same-origin checks guard rebinding and cross-origin requests. APIs require a per-process random HTTP-only SameSite=Strict session; mutations also require a CSRF header and JSON body capped at 16 KiB. No wildcard CORS or public mode exists. This is a same-user local application, not a boundary against malware running as the same OS account.
+The only bind is 127.0.0.1, with proxy headers disabled. Host and same-origin checks guard rebinding and cross-origin requests. The launcher prints a private link that exchanges a random access token for a per-process HTTP-only SameSite=Strict session. Access logs are disabled and the browser redirects to the token-free URL. Mutations also require a CSRF header and a JSON body capped at 16 KiB. Keep the launcher link private and keep the dashboard within the trusted local user environment.
 
 Jinja escapes source, filenames, branches, errors and logs. JavaScript uses textContent and DOM options for untrusted text. CSP forbids external scripts, inline handlers, objects and framing. Registered IDs constrain access. Fingerprints and result versions reject stale/double actions. A process lock prevents two servers using one store.
 
-One worker/three queued jobs bounds concurrency. Cancellation checks occur between phases; current Git commands finish or time out. History admission stops at 500 runs/256 MiB of live SQLite pages; admitted jobs can still add results. Snapshot limits: 10,000 entries, 2 MiB/blob, 32 MiB/batch, 64 MiB unique four-version source. Subprocess output is capped at 64 MiB. Limit failures never become clean results.
+One worker and three queued jobs bound concurrency. Cancellation checks occur between phases. Current Git commands finish or time out. History admission stops at 500 runs or 256 MiB of live SQLite pages. Admitted jobs can still add results. Snapshot limits include 10,000 entries, 2 MiB per blob, 32 MiB per batch, and 64 MiB of logical Python source across the four versions. Subprocess output is capped at 64 MiB. Limit failures never become clean results.
 
-History/exports contain source snapshots. Protect them like repositories. There is no source upload, telemetry or third-party asset fetch.
+History and exports contain source snapshots. Protect them like repositories. POSIX history databases and sidecars use owner-only permissions. On Windows, use the default user-profile state path or a directory with equivalent Windows access controls. The local dashboard has no source upload, telemetry or third-party asset fetch.
 
 ## Runtime runner
 
-Only explicit immutable locally installed image IDs are accepted; no pull or host fallback. Each container sees a temporary read-only tracked snapshot without .git, secrets, privileged mounts or network. UID/GID 65534, dropped capabilities, no-new-privileges, read-only root, capped tmpfs/CPU/memory/processes/time/output and explicit cleanup constrain it.
+Only explicit immutable locally installed image IDs without declared volumes are accepted. The runner has no pull or host fallback. Each container sees a temporary read-only tracked snapshot mounted from inside a private directory. The snapshot excludes `.git` and preserves tracked files, so keep credentials out of tracked repository contents. Each snapshot is capped at 32 MiB across paths. UID/GID 65534, dropped capabilities, no-new-privileges, a read-only root, capped tmpfs, CPU, memory, processes, time and output, and explicit cleanup constrain the run.
 
 Isolation depends on trusted Docker/image/platform and is not VM-grade containment against container escapes. Parent/environment failures and absent infrastructure do not pass. The daemon was absent here; command construction/cleanup were tested, actual containers were not.

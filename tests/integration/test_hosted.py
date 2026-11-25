@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+from types import SimpleNamespace
 import time
 from urllib.parse import parse_qs, urlsplit
 
@@ -10,9 +11,32 @@ from mergerisk import hosted_auth
 from mergerisk.hosted import create_app
 from mergerisk.hosted_auth import GitHubAuth
 from mergerisk.hosted_store import HostedStore
+from mergerisk import hosted_store
 
 
 ORIGIN = "https://beta.example.test"
+
+
+def test_idle_hosted_worker_physically_removes_expired_reports(tmp_path, monkeypatch):
+    now = 100_000
+    monkeypatch.setattr(hosted_store, "time", SimpleNamespace(time=lambda: now))
+    monkeypatch.setattr("mergerisk.hosted._MAINTENANCE_SECONDS", 0.02)
+    store = HostedStore(sqlite_path=tmp_path / "idle.sqlite3")
+    store.submit("1", {"repository": "example/sample"})
+    job = store.claim()
+    assert store.finish(job["id"], job["lease_token"], result={"message": "synthetic report"})
+    auth = GitHubAuth("client", "secret", "x" * 48, ORIGIN)
+    app = create_app(store=store, auth=auth, origin=ORIGIN, allowed_users={"1"})
+    with TestClient(app, base_url=ORIGIN):
+        now += hosted_store._RETENTION + 1
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            with store._connect() as db:
+                if db.execute("SELECT COUNT(*) FROM hosted_jobs").fetchone()[0] == 0:
+                    break
+            time.sleep(0.02)
+        else:
+            raise AssertionError("Expired row remained in the database without incoming requests")
 
 
 def _as_user(client, auth, identifier, login):

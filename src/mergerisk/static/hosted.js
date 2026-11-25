@@ -190,7 +190,7 @@ function drawHistory(jobs) {
     historyKey = key;
   }
   for (const button of runs.querySelectorAll('button')) {
-    button.setAttribute('aria-pressed', String(button.dataset.runId === selected));
+    button.setAttribute('aria-pressed', String(button.dataset.runId === rendered?.id));
   }
 }
 
@@ -206,12 +206,14 @@ async function refresh() {
       showEmptyReport();
     }
     drawHistory(jobs);
-    setStatus(jobs.length ? '' : 'Your analyses will appear here.');
     if (opened && (opened.id !== rendered?.id || opened.state !== rendered.state || opened.updated !== rendered.updated)) {
+      if (opened.id !== rendered?.id) setStatus('Opening analysis…');
       const detail = await api(jobPath(opened.id));
       if (request !== revision) return;
       drawJob(detail);
+      drawHistory(jobs);
     }
+    setStatus(jobs.length ? '' : 'Your analyses will appear here.');
     if (jobs.some(job => job.state === 'queued' || job.state === 'running')) refreshTimer = setTimeout(refresh, 2000);
   } catch (error) {
     if (request !== revision) return;

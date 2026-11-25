@@ -3,8 +3,7 @@ from pathlib import Path
 import pytest
 
 from mergerisk.git import GitSnapshotReader
-from mergerisk.git.plumbing import run_git
-from mergerisk.git.plumbing import PreparedRefUpdate
+from mergerisk.git.plumbing import PreparedRefUpdate, bounded_run, environment, installed_tool, run_git
 from mergerisk.sample import create_sample, RIGHT, BASE
 from mergerisk.service import MergeService
 from mergerisk.domain.revisions import RevisionContext
@@ -75,7 +74,9 @@ def test_shallow_repository_reports_unavailable_base(tmp_path):
     create_sample(origin)
     clone = tmp_path / "shallow"
     # file transport is enabled for this known-local integration fixture only.
-    run_git(tmp_path, ["-c", "protocol.file.allow=always", "clone", "--depth=1", "--no-single-branch", origin.as_uri(), str(clone)])
+    cloned = bounded_run([installed_tool("git", tmp_path), "clone", "--depth=1", "--no-single-branch",
+                          origin.as_uri(), str(clone)], env={**environment(), "GIT_ALLOW_PROTOCOL": "file"})
+    assert cloned.returncode == 0, cloned.stderr
     service = MergeService(clone)
     assert run_git(clone, ["rev-parse", "--is-shallow-repository"]).stdout.strip() == b"true"
     with pytest.raises(ValueError, match="merge base"):
@@ -173,16 +174,21 @@ def test_global_git_identity_is_read_without_enabling_global_hooks(tmp_path, mon
     assert author.strip() == b"Global Test <global@example.invalid>"
 
 
-def test_runtime_runner_constructs_isolated_commands_and_cleans_every_container(tmp_path, monkeypatch):
+@pytest.mark.parametrize("runner_outcome", ["success", "unavailable", "volumes"])
+def test_runtime_runner_constructs_isolated_commands_and_cleans_every_container(tmp_path, monkeypatch, runner_outcome):
+    import os
+    import stat
     import subprocess
     from mergerisk.verification import RuntimeConfig, verify_runtime
     create_sample(tmp_path)
     service = MergeService(tmp_path)
     preview = service.preview("target", "source")
     calls = []
-    monkeypatch.setattr("mergerisk.verification.shutil.which", lambda _: "docker")
+    monkeypatch.setattr("mergerisk.verification.installed_tool", lambda *args: "docker")
     def fake_runner(argv, **kwargs):
         calls.append(argv)
+        if argv[1:3] == ["image", "inspect"]:
+            return subprocess.CompletedProcess(argv, 0, b'{"/data": {}}' if runner_outcome == "volumes" else b"null", b"")
         if argv[1] == "run":
             assert "--network=none" in argv and "--read-only" in argv
             assert "--user=65534:65534" in argv and "--pids-limit=64" in argv
@@ -190,9 +196,43 @@ def test_runtime_runner_constructs_isolated_commands_and_cleans_every_container(
             assert "--pull=never" in argv and "--security-opt=no-new-privileges" in argv
             assert "readonly" in argv[argv.index("--mount") + 1]
             assert kwargs["limit"] == 65536
+            if os.name == "posix":
+                snapshot = Path(argv[argv.index("--mount") + 1].split("source=", 1)[1].split(",target=", 1)[0])
+                assert stat.S_IMODE(snapshot.parent.stat().st_mode) == 0o700
+            if runner_outcome == "unavailable" and len([c for c in calls if c[1] == "run"]) == 3:
+                raise RuntimeError("Synthetic runner failure")
         return subprocess.CompletedProcess(argv, 0, b"pass\n", b"")
     monkeypatch.setattr("mergerisk.verification.bounded_run", fake_runner)
     result = verify_runtime(service, preview, RuntimeConfig("sha256:" + "a" * 64, ("python", "-m", "pytest")))
-    assert result["status"] == "runtime_verified"
-    assert len([c for c in calls if c[1] == "run"]) == 4
-    assert len([c for c in calls if c[1] == "rm"]) == 4
+    assert result["status"] == ("runtime_verified" if runner_outcome == "success" else "validation_unavailable")
+    count = {"success": 4, "unavailable": 3, "volumes": 0}[runner_outcome]
+    assert len([c for c in calls if c[1] == "run"]) == count
+    assert len([c for c in calls if c[1] == "rm"]) == count
+
+
+def test_preview_reports_omitted_parent_source(tmp_path, monkeypatch):
+    create_sample(tmp_path)
+    service = MergeService(tmp_path)
+    revisions = service.assembler.assemble("target", "source")
+
+    def snapshots(revision):
+        entry = b"\0" if revision == revisions.base_commit else b"x = 1\n"
+        return {"app.py": entry}, {"app.py": ("100644", "blob", "synthetic-object")}
+
+    monkeypatch.setattr(service, "_sources", snapshots)
+    preview = service.preview("target", "source")
+    assert preview.original.status.value == "partial"
+    assert preview.original.coverage.files_unsupported == 1
+    assert "base:" in " ".join(preview.original.notes)
+    assert preview.repair.analysis.coverage.files_unsupported == 1
+
+
+def test_preview_budget_counts_path_occurrences_before_decoding(tmp_path, monkeypatch):
+    create_sample(tmp_path)
+    service = MergeService(tmp_path)
+    source = b"x = 123\n"
+    monkeypatch.setattr(service, "_sources", lambda _: ({"a.py": source, "b.py": source}, {}))
+    monkeypatch.setattr("mergerisk.service._SOURCE_LIMIT", 12)
+    monkeypatch.setattr("mergerisk.service.text_versions", lambda _: pytest.fail("Source exceeded logical budget"))
+    with pytest.raises(ValueError, match="across tracked Python paths"):
+        service.preview("target", "source")

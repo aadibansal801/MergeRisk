@@ -16,7 +16,7 @@ On Linux use .venv/bin/python and .venv/bin/mergerisk. Installation bundles all 
 
 ## Dashboard workflow
 
-1. Start `mergerisk dashboard` and open http://127.0.0.1:8765. Use --port or --state-dir to select another port/local store. Only one server can use a state directory.
+1. Start `mergerisk dashboard` and open the private link it prints. The link signs your browser in for this server process. Keep it private. Use `--port` or `--state-dir` to select another port or local store. Only one server can use a state directory.
 2. Register the absolute canonical repository root. Unborn repositories, traversal and symlink/junction paths are rejected. Subsequent operations accept registered IDs only.
 3. Choose target (left) and source (right). The worker resolves immutable SHAs, finds a unique base, and asks Git for its merge tree. Shallow history may need fetching by you first.
 4. Follow real progress messages. One job runs with three queued slots. Cancellation stops at safe checkpoints; a running Git command can take up to 30 seconds to return.

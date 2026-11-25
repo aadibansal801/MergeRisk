@@ -14,7 +14,7 @@ mergerisk doctor
 mergerisk dashboard
 ```
 
-Open [127.0.0.1:8765](http://127.0.0.1:8765). Register a repository, select target/source branches, analyze, inspect findings and B/L/R/M/fixed source comparisons, then explicitly create a commit. Applying it is a separate action. No Node installation or frontend build is needed.
+Open the private dashboard link printed by `mergerisk dashboard`. Register a repository, select target/source branches, analyze, inspect findings and B/L/R/M/fixed source comparisons, then explicitly create a commit. Applying it is a separate action. No Node installation or frontend build is needed.
 
 For an isolated Windows installation, first run `python -m venv .venv` and activate it with `.\.venv\Scripts\Activate.ps1`. The dashboard runs locally; it does not require a hosted service or an account.
 
